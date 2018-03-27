@@ -1,0 +1,80 @@
+---
+title: "GCI-Java reaches the Cloud"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "March, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+
+require(gridExtra)
+require(boot)
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+
+source("functions.R")
+
+RESAMPLES <- 1000
+```
+
+# Latency comparison
+
+```{r}
+al1.exp.gci <- accesslog("1i", "gci_T80", 4)
+al1.exp.nogci <- accesslog("1i", "nogci_T80", 4)
+al1.exp.gci <- filter(al1.exp.gci, status == 200)
+al1.exp.nogci <- filter(al1.exp.nogci, status == 200)
+```
+
+```{r, fig.asp=0.5, fig.align="center"}
+# If you don't trim the library, your computer could die trying to resample.
+al1.cmp <- rbind(
+  data.frame("latency"=sample(al1.exp.gci$request_time, RESAMPLES), type="GCI ON"),
+  data.frame("latency"=sample(al1.exp.nogci$request_time, RESAMPLES), type="GCI OFF"))
+
+grid.arrange(
+  ggplot(al1.cmp, aes(type, latency)) +
+    geom_boxplot() +
+    ggtitle("Summary") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+   ggplot(al1.cmp, aes(latency, linetype=type)) +
+    stat_ecdf() +
+    ggtitle("ECDF") +
+    xlab("Latency(ms)") +
+    ylab("ECDF") +
+    theme(legend.position="top"),
+  ncol=2)
+
+grid.arrange(
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=median, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.median, geom="errorbar", width=0.05) +
+    ggtitle("Median") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p99, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p99, geom="errorbar", width=0.05) +
+    ggtitle("99 Percentile") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p999, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p999, geom="errorbar", width=0.05) +
+    ggtitle("99.9 Percentile") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p9999, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p9999, geom="errorbar", width=0.05) +
+    ggtitle("99.99 Percentile") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ncol=2,
+  nrow=2)
+```
