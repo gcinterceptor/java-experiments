@@ -18,23 +18,27 @@ require(ggplot2)
 
 source("functions.R")
 
+SAMPLE_SIZE <- 2000
 RESAMPLES <- 1000
 ```
 
 # Latency comparison
 
 ```{r}
-al1.exp.gci <- accesslog("1i", "gci_T80", 4)
-al1.exp.nogci <- accesslog("1i", "nogci_T80", 4)
+al1.exp.gci <- accesslog("1i", "gci_T80", 1)
+al1.exp.nogci <- accesslog("1i", "nogci_T80", 1)
 al1.exp.gci <- filter(al1.exp.gci, status == 200)
 al1.exp.nogci <- filter(al1.exp.nogci, status == 200)
+
+summary(al1.exp.gci$request_time)
+summary(al1.exp.nogci$request_time)
 ```
 
 ```{r, fig.asp=0.5, fig.align="center"}
 # If you don't trim the library, your computer could die trying to resample.
 al1.cmp <- rbind(
-  data.frame("latency"=sample(al1.exp.gci$request_time, RESAMPLES), type="GCI ON"),
-  data.frame("latency"=sample(al1.exp.nogci$request_time, RESAMPLES), type="GCI OFF"))
+  data.frame("latency"=sample(al1.exp.gci$request_time, SAMPLE_SIZE), type="GCI ON"),
+  data.frame("latency"=sample(al1.exp.nogci$request_time, SAMPLE_SIZE), type="GCI OFF"))
 
 grid.arrange(
   ggplot(al1.cmp, aes(type, latency)) +

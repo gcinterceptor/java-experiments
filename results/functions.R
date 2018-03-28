@@ -7,9 +7,14 @@ read.accesslog <- function(f) {
   # the log write after the last bytes were sent to the client
   # http://nginx.org/en/docs/http/ngx_http_log_module.html.
   al$request_time <- al$request_time * 1000 # Making it milliseconds.
-  # Calculating elapsed time. It is more useful than timestamp.
+
+  # Filtering out first and last 30 seconds (warmup)
   al <- al %>% arrange(timestamp)
-  al$exp_dur_ms <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1]) * 1000
+  tsBegin <- al[1,]$timestamp + 60
+  tsEnd <- al[NROW(al),]$timestamp
+  al <- al %>% filter(timestamp > tsBegin & timestamp < tsEnd)
+  
+  #al$exp_dur_ms <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1]) * 1000
   al$hop1 <- sub(',.*$', '', al$upstream_response_time)
   al$hop1 <- as.numeric(al$hop1)*1000
   al$hop2 <- sub('^.*,', '', al$upstream_response_time)
@@ -35,7 +40,7 @@ accesslog <- function(outdir, exp, n) {
 }
 
 ci.median <- function(x) {
-  wt <- wilcox.test(sample(x, 1000), conf.level=0.95, conf.int = T)
+  wt <- wilcox.test(sample(x, RESAMPLES), conf.level=0.95, conf.int = T)
   r <- wt$conf.int
   names(r) <- c("ymin", "ymax")
   return(r)
@@ -57,7 +62,7 @@ ci.p <- function(x, p) {
   ci.fun <- function(data, indices) {
     return(c(quantile(data[indices], c(p)), var(data)))
   }
-  b <- boot(x, ci.fun, R=RESAMPLES)
+  b <- boot(x, ci.fun, R=1500)
   bci <- boot.ci(b)
   return(data.frame("ymin"=c(bci$basic[4]), "ymax"=c(bci$basic[5])))
 }
