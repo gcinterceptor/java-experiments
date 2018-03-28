@@ -60,7 +60,7 @@ do
     echo "round ${round}: Done. Copying results and cleaning up instances..."
     scp ${LB}:~/\{*log,*.out\} ${OUTPUT_DIR}
     ssh ${LB} "rm *.log; rm *.out"
-    sed -i '1i timestamp;status;request_time;upstream_response_time' ${OUTPUT_DIR}/nginx_access_${FILE_NAME_SUFFIX}_${round}.log
+    sed -i '1i timestamp;status;request_time;upstream_response_time' ${OUTPUT_DIR}/al_${FILE_NAME_SUFFIX}_${round}.log
 
     i=0
     for instance in ${INSTANCES};
