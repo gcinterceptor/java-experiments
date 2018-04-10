@@ -1,0 +1,161 @@
+---
+title: "GCI-Java: 2 Instances"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "March, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+
+require(gridExtra)
+require(boot)
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+
+source("functions.R")
+
+SAMPLE_SIZE <- 2500
+RESAMPLES <- 1000
+```
+
+# Latency comparison
+
+```{r}
+al.gci.warm <- accesslog("2i", "gci_T160_Java9_YoungGCOnly", 1)
+al.nogci.warm <- accesslog("2i", "nogci_T160_Java9_YoungGCOnly", 1)
+al.gci <- filter(al.gci.warm, status == 200)
+al.nogci <- filter(al.nogci.warm, status == 200)
+
+print(paste("Number of succeeded requests (GCI ON): ", NROW(al.gci)))
+print(paste("IQR (GCI ON): ", IQR(al.gci$request_time)))
+summary(al.gci$request_time)
+print(paste("Number of succeeded requests (GCI OFF): ", NROW(al.nogci)))
+print(paste("IQR (GCI OFF): ", IQR(al.nogci$request_time)))
+summary(al.nogci$request_time)
+```
+
+
+```{r, fig.asp=0.5, fig.align="center"}
+# If you don't trim the library, your computer could die trying to resample.
+al1.cmp <- rbind(
+  data.frame("latency"=sample(al.gci$request_time, SAMPLE_SIZE), type="GCI ON"),
+  data.frame("latency"=sample(al.nogci$request_time, SAMPLE_SIZE), type="GCI OFF"))
+
+grid.arrange(
+  ggplot(al1.cmp, aes(type, latency)) +
+    geom_boxplot() +
+    ggtitle("Summary") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+   ggplot(al1.cmp, aes(latency, linetype=type)) +
+    stat_ecdf() +
+    ggtitle("ECDF") +
+    xlab("Latency(ms)") +
+    ylab("ECDF") +
+    theme(legend.position="top"),
+  ncol=2)
+
+grid.arrange(
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=median, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.median, geom="errorbar", width=0.05) +
+    ggtitle("Median") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p99, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p99, geom="errorbar", width=0.05) +
+    ggtitle("99 Percentile") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p999, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p999, geom="errorbar", width=0.05) +
+    ggtitle("99.9 Percentile") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p9999, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p9999, geom="errorbar", width=0.05) +
+    ggtitle("99.99 Percentile") +
+    ylab("Latency(ms)") +
+    xlab("Type"),
+  ncol=2,
+  nrow=2)
+```
+
+# Failed Requests
+
+```{r}
+failed.requests.gci <- filter(al.gci.warm, status == 503)
+print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al.gci))*100, "% )"))
+if (NROW(failed.requests.gci) > 0) {
+  summary(failed.requests.gci$request_time)
+  hist(failed.requests.gci$request_time)
+}
+
+failed.requests.nogci <- filter(al.nogci.warm, status == 503)
+print(paste("Number of failed requests (GCI OFF): ", NROW(failed.requests.nogci), "(", (NROW(failed.requests.nogci)/NROW(al.nogci))*100, "% )"))
+if (NROW(failed.requests.nogci) > 0) {
+  summary(failed.requests.nogci$request_time)
+  hist(failed.requests.nogci$request_time)
+}
+```
+
+# Not-Shed requests
+
+Requests that have not been shed.
+
+```{r notshed}
+not.requests <- filter(al.gci, num_hops == 1)
+print(paste("Number of shed requests that have not been shed: ", NROW(not.requests), "(", (NROW(not.requests)/NROW(al.gci))*100,"%)"))
+if (NROW(not.requests) > 0) {
+  summary(not.requests$request_time)
+  hist(not.requests$request_time, breaks=50, main="Latency of requests that have been shed", xlab="Latency (ms)")
+  quantile(not.requests$request_time, c(0.9,0.99,0.999,0.9999, 0.99999))
+}
+```
+
+# Shed requests
+
+The requests have been shed by the first upstream service and processed by the second.
+
+## Overall Stats
+
+```{r resent_requests}
+resent.requests <- filter(al.gci, num_hops > 1)
+print(paste("Number of shed requests: ", NROW(resent.requests), "(", (NROW(resent.requests)/NROW(al.gci))*100,"%)"))
+if (NROW(resent.requests) > 0) {
+  summary(resent.requests$request_time)
+  hist(resent.requests$request_time, breaks=50, main="Latency of requests that have been shed", xlab="Latency (ms)")
+  quantile(resent.requests$request_time, c(0.9,0.99,0.999,0.9999, 0.99999))
+}
+```
+## First node stats
+Statistics about the time for a request to reach the first instance (upstream
+server), go over the queue and be shed.
+
+```{r resent_requests_hop1}
+if (NROW(resent.requests) > 0) {
+  summary(resent.requests$hop1)
+  hist(resent.requests$hop1, main="Latency of the first upstream service (shed)", xlab="Latency (ms)")
+  quantile(resent.requests$hop1, c(0.9,0.99,0.999,0.9999, 0.99999))
+}
+```
+
+## Second node stats
+
+After being shed by the first instance the request is redirected. The following
+statistic represents the latency considering only of the second upstream server.
+
+```{r resent_requests_hop2}
+if (NROW(resent.requests) > 0) {
+  summary(resent.requests$hop2)
+  hist(resent.requests$hop2, main="Latency of the second upstream service (shed)", xlab="Latency (ms)")
+  quantile(resent.requests$hop2, c(0.9,0.99,0.999,0.9999, 0.99999))
+}
+```
