@@ -42,7 +42,7 @@ do
     echo "round ${round}: Bringing up server instances..."
     for instance in ${INSTANCES};
     do
-        ssh ${instance} "killall java 2>/dev/null;killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} nohup java -server -Xlog:gc* -Xlog:gc:gc.log ${JVMARGS} -jar -Dserver.port=3000 msgpush.jar >/dev/null 2>/dev/null & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
+        ssh ${instance} "killall java 2>/dev/null; rm gc.log shed.csv 2>/dev/null; killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} nohup java -server -Xlog:gc* -Xlog:gc:gc.log ${JVMARGS} -jar -Dserver.port=3000 msgpush.jar >/dev/null 2>/dev/null & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
     done
 
     sleep 5
