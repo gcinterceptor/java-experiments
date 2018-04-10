@@ -25,9 +25,8 @@ RESAMPLES <- 1000
 # Latency comparison
 
 ```{r}
-al1.exp.gci.warm <- accesslog("1i", "gci_T80", 1)
-al1.exp.nogci.warm <- accesslog("1i", "nogci_T80", 1)
-
+al1.exp.gci.warm <- accesslog("1i", "gci_T80_Java9_WithFullGC", 1)
+al1.exp.nogci.warm <- accesslog("1i", "nogci_T80_Java9_WithFullGC", 1)
 al1.exp.gci <- filter(al1.exp.gci.warm, status == 200)
 al1.exp.nogci <- filter(al1.exp.nogci.warm, status == 200)
 

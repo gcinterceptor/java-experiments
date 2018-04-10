@@ -8,9 +8,9 @@ read.accesslog <- function(f) {
   # http://nginx.org/en/docs/http/ngx_http_log_module.html.
   al$request_time <- al$request_time * 1000 # Making it milliseconds.
 
-  # Filtering out first and last 30 seconds (warmup)
+  # Filtering out first 120 seconds (warmup)
   al <- al %>% arrange(timestamp)
-  tsBegin <- al[1,]$timestamp + 60
+  tsBegin <- al[1,]$timestamp + 240
   al <- al %>% filter(timestamp > tsBegin)
   
   #al$exp_dur_ms <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1]) * 1000
