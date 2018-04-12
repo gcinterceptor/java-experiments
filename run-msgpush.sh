@@ -8,6 +8,7 @@ set -x
 # Example:
 # LB="3.3.3.3"
 # INSTANCES="1.1.1.1 2.2.2.2"
+# USE_GCI="true"
 
 # TODO(danielfireman): Check parameters.
 
@@ -22,6 +23,7 @@ fi
 
 # Experiment configuration
 echo "OUTPUT_DIR: ${OUTPUT_DIR:=/tmp/2instances}"
+mkdir -p "$OUTPUT_DIR"
 echo "ROUND_START: ${ROUND_START:=1}"
 echo "ROUND_END: ${ROUND_END:=1}"
 echo "USE_GCI: ${USE_GCI}"
@@ -32,7 +34,7 @@ echo "WINDOW_SIZE: ${WINDOW_SIZE:=1}"
 echo "SUFFIX: ${SUFFIX:=}"
 echo "THREADS: ${THREADS:=1}"
 echo "CONNECTIONS: ${CONNECTIONS:=2}"
-echo "JVMARGS: ${GC:-XX:+UseParallelGC -XX:NewRatio=1}"
+echo "JVMARGS: ${-XX:+UseParallelGC -XX:NewRatio=1}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
 
 
@@ -47,7 +49,7 @@ do
 
     sleep 5
     echo "round ${round}: Done. Starting load test..."
-    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall wrk 2>/dev/null; bin/wrk -t${THREADS} -c${CONNECTIONS} -d${EXPERIMENT_DURATION} -R${THROUGHPUT} --latency --timeout=15s http://localhost > ~/wrk_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
+    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall wrk 2>/dev/null; wrk -t${THREADS} -c${CONNECTIONS} -d${EXPERIMENT_DURATION} -R${THROUGHPUT} --latency --timeout=15s http://localhost > ~/wrk_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
 
     echo "round ${round}: Done. Putting server instances down..."
     i=0
