@@ -22,7 +22,8 @@ else
 fi
 
 # Experiment configuration
-echo "OUTPUT_DIR: ${OUTPUT_DIR:=/tmp/2instances}"; mkdir -p "$OUTPUT_DIR"
+echo "OUTPUT_DIR: ${OUTPUT_DIR:=/tmp/2instances}"
+mkdir -p "$OUTPUT_DIR"
 echo "ROUND_START: ${ROUND_START:=1}"
 echo "ROUND_END: ${ROUND_END:=1}"
 echo "USE_GCI: ${USE_GCI}"
