@@ -21,8 +21,3 @@ cd ../
 # install openjdk.
 apt-get install openjdk-8-jdk -y
 apt-get -o Dpkg::Options::="--force-overwrite" install openjdk-9-jdk -y
-
-# install nginx. Remove the hash character below to do it if needed.
-# apt-get install nginx -y
-
-
