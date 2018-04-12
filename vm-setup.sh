@@ -18,6 +18,5 @@ make
 cp wrk /usr/local/bin
 cd ../
 
-# install openjdk.
-apt-get install openjdk-8-jdk -y
+# install openjdk9.
 apt-get -o Dpkg::Options::="--force-overwrite" install openjdk-9-jdk -y
