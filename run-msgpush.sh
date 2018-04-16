@@ -34,7 +34,7 @@ echo "WINDOW_SIZE: ${WINDOW_SIZE:=1}"
 echo "SUFFIX: ${SUFFIX:=}"
 echo "THREADS: ${THREADS:=1}"
 echo "CONNECTIONS: ${CONNECTIONS:=2}"
-echo "JVMARGS: ${-XX:+UseParallelGC -XX:NewRatio=1}"
+echo "JVMARGS: ${JVMARGS:=-XX:+UseParallelGC -XX:NewRatio=1}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
 
 
