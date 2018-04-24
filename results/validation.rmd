@@ -1,7 +1,7 @@
 ---
-title: "GCI-Java reaches the Cloud: Experiments and simulation results"
+title: "GCI Simulator Validation"
 author: "Daniel Fireman (danielfireman@gmail.com)"
-date: "January, 2018"
+date: "March, 2018"
 output: pdf_document
 ---
 
@@ -19,8 +19,8 @@ require(ggplot2)
 
 source("functions.R")
 
-RESAMPLES <- 2000
-WARMUP_SECS <- 20
+RESAMPLES <- 1000
+WARMUP_SECS <- 120
 ```
 
 # Simulator Validation
@@ -46,14 +46,14 @@ al1.sim.gci <- rbind(
   read.csv("1i/sim_lb_gci_2.csv"),
   read.csv("1i/sim_lb_gci_3.csv"),
   read.csv("1i/sim_lb_gci_4.csv"))
-al1.sim.gci$latency <- al1.sim.gci$latency*1000
+al1.sim.gci$latency <- as.integer(al1.sim.gci$latency*1000)
 
 al1.sim.nogci <- rbind(
   read.csv("1i/sim_lb_nogci_1.csv"),
   read.csv("1i/sim_lb_nogci_2.csv"),
   read.csv("1i/sim_lb_nogci_3.csv"),
   read.csv("1i/sim_lb_nogci_4.csv"))
-al1.sim.nogci$latency <- al1.sim.nogci$latency*1000
+al1.sim.nogci$latency <- as.integer(al1.sim.nogci$latency*1000)
 
 # Only consider latency of successfull requests.
 al1.sim.gci <- filter(al1.sim.gci, done == "True")
@@ -75,8 +75,8 @@ Confidence intervals for the median where calculated using the Wilcoxon signed (
 ```{r, fig.asp=0.5, fig.align="center"}
 # If you don't trim the library, your computer could die trying to resample.
 al1.cmp <- rbind(
-  data.frame("latency"=sample(al1.sim.gci$latency, RESAMPLES), type="Simulator"),
-  data.frame("latency"=sample(al1.exp.gci$request_time, RESAMPLES), type="Experiment"))
+  data.frame("latency"=sample(al1.sim.gci$latency, 4000), type="Simulator"),
+  data.frame("latency"=sample(al1.exp.gci$request_time, 4000), type="Experiment"))
 
 grid.arrange(
   ggplot(al1.cmp, aes(type, latency)) +
@@ -90,7 +90,11 @@ grid.arrange(
     xlab("Latency(ms)") +
     ylab("ECDF") +
     theme(legend.position="top"),
-  ncol=2)
+  ggplot(al1.cmp) +
+    stat_qq(aes(sample=latency, colour=type)) +
+    ggtitle("QQPLOT") +
+    theme(legend.position="top"),
+  ncol=3)
 
 grid.arrange(
   ggplot(al1.cmp, aes(type, latency)) +
@@ -125,8 +129,8 @@ grid.arrange(
 
 ```{r, fig.asp=0.5, fig.align="center"}
 al1.nogci.cmp <- rbind(
-  data.frame("latency"=sample(al1.sim.nogci$latency, RESAMPLES), type="Simulator"),
-  data.frame("latency"=sample(al1.exp.nogci$request_time, RESAMPLES), type="Experiment"))
+  data.frame("latency"=sample(al1.sim.nogci$latency, 4000), type="Simulator"),
+  data.frame("latency"=sample(al1.exp.nogci$request_time, 4000), type="Experiment"))
 
 grid.arrange(
   top = "Control Group",
@@ -141,7 +145,11 @@ grid.arrange(
     xlab("Latency(ms)") +
     ylab("ECDF") +
     theme(legend.position="top"),
-  ncol=2)
+  ggplot(al1.nogci.cmp) +
+    stat_qq(aes(sample=latency, colour=type)) +
+    ggtitle("QQPLOT") +
+    theme(legend.position="top"),
+  ncol=3)
 
 grid.arrange(
   ggplot(al1.nogci.cmp, aes(type, latency)) +
@@ -172,68 +180,58 @@ grid.arrange(
   nrow=2)
 ```
 
-### Conclusions 
 
-ECDFs and confidence intervals for the median and tail seem to intersect. Is that enough?
-
-We searched for a test that could statistically confirm that both
-results - simulator and experiments - have the same distribution (median, variance
-and shape). 
 
 ## Hypothesis tests
 
-Even though the ECDF looked very similar and the confidence intervals seem to intersect, the comparison of the two distribution failed in both tests: two-sample Wilcoxon rank sum test and two-sample Kolmogorov-Smirnov test (check distribution, i.e. median, variance and shape).
+Even though the ECDF looked very similar and the confidence intervals seem to intersect, we would like to have an statistical test to check how close the simulator latency is to the experiment latency, which can can be measured by Goodness-of-Fit (GoF) tests. e used
+the two-sample Kolmogorov-Smirnov (KS) test, which checks if two that the samples are drawn from the same distribution. 
 
-```{r}
-wilcox.test(sample(al1.sim.gci$latency, 3000), sample(al1.exp.gci$request_time, 3000), conf.int = T)
-wilcox.test(sample(al1.sim.nogci$latency, 3000), sample(al1.exp.nogci$request_time, 3000), conf.int = T)
+The KS test has an issue of being sensitive for large samples. As the data samples used are all large ($35,000+$ datapoints), we applied an approach used in other modelling studies to mitigate this issue [this](http://ieeexplore.ieee.org/document/5703090/), [this](http://ieeexplore.ieee.org/document/5367061/) and [Marcus' paper](http://ieeexplore.ieee.org/document/6319153/?reload=true) (more at Marcus' paper, including references to goodness-of-fit tests). We selected $500$ random samples of size $50$ for each fitted data, obtain the p-values for the KS test applied to each sample and then calculate the average p-value.
+
+**Treatment**
+
+```{r cache=F}
+mean(bind_rows(
+      replicate(
+          1000,
+          ks.test((al1.cmp %>% filter(type == "Experiment") %>% sample_n(30))$latency, 
+                  (al1.cmp %>% filter(type == "Simulator") %>% sample_n(30))$latency),
+          simplify = F),
+      .id="Obs")$p.value)
 ```
 
-The null hypothesis of the [two-sample Wilcoxon rank sum](http://data.library.virginia.edu/the-wilcoxon-rank-sum-test/) is taken as equal medians.
-Since we’re assuming our distributions are equal and the p-value bellow is really low,
-we could refute the null hyphotesis. Rejecting the null means we have
-evidence that the medians of the two populations differ. The R statistical programming
-environment, which we use to implement the Wilcoxon rank sum test below, refers to
-this a “location shift”.
 
-It is importante to notice the really low median of the difference confidence interval.
+**Control**
 
-```{r}
-ks.test(jitter(sample(al1.sim.gci$latency, 3000)), jitter(sample(al1.exp.gci$request_time, 3000)))
-ks.test(jitter(sample(al1.sim.nogci$latency, 3000)), jitter(sample(al1.exp.nogci$request_time, 3000)))
+```{r cache=F}
+mean(bind_rows(
+      replicate(
+          1000,
+          ks.test((al1.nogci.cmp %>% filter(type == "Experiment") %>% sample_n(30))$latency, 
+                  (al1.nogci.cmp %>% filter(type == "Simulator") %>% sample_n(30))$latency),
+          simplify = F),
+      .id="Obs")$p.value)
 ```
 
-The Kolmogorov–Smirnov statistic quantifies a distance between distribution functions of two samples. The null distribution of this statistic is calculated under the null hypothesis that the samples are drawn from the same distribution (in the two-sample case). In each case, the distributions considered under the null hypothesis are continuous distributions but are otherwise unrestricted.
+As p-values are that high we can not refute the null hyphothesis: one *cannot* claim statistical support for a difference.
 
-The two-sample K–S test is one of the most useful and general nonparametric methods for comparing two samples, as it is sensitive to differences in both location and shape of the empirical cumulative distribution functions of the two samples [Wikipedia](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test).
+## Conclusions 
 
-The test has disadvantage that they are more sensitive to deviations near the centre of the distribution than at the tails.
-It is also well known that the test does not handle ties so well.
+I would say the simulator is valid: one cannot claim its output is statically different from what we observed in our
+experiments.
 
-## We need a better understanding of the methods
-
-I am not entirely convinced that the tests above are really meaningful. First of the ECDF curves pretty much concide. Another reason is that executing the same checks with smaller samples give us the opposite result:
-
-```{r}
-wilcox.test(sample(al1.sim.gci$latency, 50), sample(al1.exp.gci$request_time, 50))
-
-ks.test(sample(al1.sim.gci$latency, 50), sample(al1.exp.gci$request_time, 50))
-```
-
-Digging deeper into the tests, I found out that they may not very suitable when dealing with samples that contains that many ties. In fact, our data is so densely distributed that 80% of 30.000+ values range from 20-60 (integers). I am not sure about the exact statistical implications of that, but I have the feeling that treat this data as categorical would lead to more accurate checks. For instance, using the Chi Squared Test:
-
-```{r}
-chisq.test(sample(al1.sim.gci$latency, 3000), sample(al1.exp.gci$request_time, 3000))
-chisq.test(sample(al1.sim.nogci$latency, 3000), sample(al1.exp.nogci$request_time, 3000))
-```
+* Boxplot, ECDFs, QQPlots look very close
+* Confidence intervals for the median and tail seem to intersect
+* The goodness-of-fit test doesn’t allow us to claim the statistical difference
 
 # Appendix
 
 ## Experiment setup
 
-* Throughput: 80
-* Threads: 1
-* Connections: 2
+* Throughput: 80 per service
+* Threads: 1 per service
+* Connections: 2 per service
 * Message size (amount of memory allocated per request): 204800
 * Experiment duration: 120s
 * Instance: 2cores, 1GB RAM
