@@ -20,6 +20,7 @@ require(ggplot2)
 source("functions.R")
 
 RESAMPLES <- 2000
+WARMUP_SECS <- 20
 ```
 
 # Simulator Validation
@@ -37,8 +38,8 @@ is the latency (continuous variable, positive integer).
 * $H_{0}$: The simulated latency is different from experimental latency.
 
 ```{r}
-al1.exp.gci <- accesslog("1i", "gci_T80_Java9_WithFullGC", 4, 20)
-al1.exp.nogci <- accesslog("1i", "nogci_T80_Java9_WithFullGC", 4, 20)
+al1.exp.gci <- accesslog("1i", "gci_T80_Java9_WithFullGC", 4, WARMUP_SECS)
+al1.exp.nogci <- accesslog("1i", "nogci_T80_Java9_WithFullGC", 4, WARMUP_SECS)
 
 al1.sim.gci <- rbind(
   read.csv("1i/sim_lb_gci_1.csv"),
