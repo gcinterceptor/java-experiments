@@ -40,6 +40,7 @@ echo "THREADS: ${THREADS:=1}"
 echo "CONNECTIONS: ${CONNECTIONS:=2}"
 echo "JVMARGS: ${JVMARGS:=-XX:+UseParallelGC -XX:NewRatio=1}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
+echo "WRK:${WRK:=wrk}"
 
 
 for round in `seq ${ROUND_START} ${ROUND_END}`
@@ -53,7 +54,7 @@ do
 
     sleep 5
     echo "round ${round}: Done. Starting load test..."
-    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall wrk 2>/dev/null; wrk -t${THREADS} -c${CONNECTIONS} -d${EXPERIMENT_DURATION} -R${THROUGHPUT} --latency --timeout=15s http://localhost > ~/wrk_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
+    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall wrk 2>/dev/null; ${WRK} -t${THREADS} -c${CONNECTIONS} -d${EXPERIMENT_DURATION} -R${THROUGHPUT} --latency --timeout=15s http://localhost > ~/wrk_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
 
     echo "round ${round}: Done. Putting server instances down..."
     i=0
