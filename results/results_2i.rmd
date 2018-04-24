@@ -20,22 +20,28 @@ source("functions.R")
 
 SAMPLE_SIZE <- 2500
 RESAMPLES <- 1000
+WARMUP_SECS <- 120
 ```
 
 # Latency comparison
 
 ```{r}
-al.gci.warm <- accesslog("2i", "gci_T160_Java9_YoungGCOnly", 1)
-al.nogci.warm <- accesslog("2i", "nogci_T160_Java9_YoungGCOnly", 1)
+al.gci.warm <- accesslog("2i", "gci_T80_Java9_YoungGCOnly_Proxy", 1, WARMUP_SECS)
+al.nogci.warm <- accesslog("2i", "nogci_T80_Java9_YoungGCOnly", 1, WARMUP_SECS)
 al.gci <- filter(al.gci.warm, status == 200)
 al.nogci <- filter(al.nogci.warm, status == 200)
-
+  
 print(paste("Number of succeeded requests (GCI ON): ", NROW(al.gci)))
 print(paste("IQR (GCI ON): ", IQR(al.gci$request_time)))
 summary(al.gci$request_time)
 print(paste("Number of succeeded requests (GCI OFF): ", NROW(al.nogci)))
 print(paste("IQR (GCI OFF): ", IQR(al.nogci$request_time)))
 summary(al.nogci$request_time)
+
+plot(al.gci$timestamp, al.gci$request_time)
+plot(al.nogci.warm$timestamp, al.nogci.warm$request_time)
+
+al.gci.warm %>% filter(request_time > 50)
 ```
 
 
@@ -91,14 +97,14 @@ grid.arrange(
 # Failed Requests
 
 ```{r}
-failed.requests.gci <- filter(al.gci.warm, status == 503)
+failed.requests.gci <- filter(al.gci.warm, status != 200)
 print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al.gci))*100, "% )"))
 if (NROW(failed.requests.gci) > 0) {
   summary(failed.requests.gci$request_time)
   hist(failed.requests.gci$request_time)
 }
 
-failed.requests.nogci <- filter(al.nogci.warm, status == 503)
+failed.requests.nogci <- filter(al.nogci.warm, status != 200)
 print(paste("Number of failed requests (GCI OFF): ", NROW(failed.requests.nogci), "(", (NROW(failed.requests.nogci)/NROW(al.nogci))*100, "% )"))
 if (NROW(failed.requests.nogci) > 0) {
   summary(failed.requests.nogci$request_time)

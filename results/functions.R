@@ -1,5 +1,5 @@
 # Parses the experiment's NGINX log file.
-read.accesslog <- function(f) {
+read.accesslog <- function(f, warmup) {
   # https://lincolnloop.com/blog/tracking-application-response-time-nginx/
   al <- read.csv(f, sep=";", colClasses=c("upstream_response_time"="character"))
   # request processing time in seconds with a milliseconds resolution;
@@ -8,9 +8,9 @@ read.accesslog <- function(f) {
   # http://nginx.org/en/docs/http/ngx_http_log_module.html.
   al$request_time <- al$request_time * 1000 # Making it milliseconds.
 
-  # Filtering out first 120 seconds (warmup)
+  # Filtering out first warmup seconds
   al <- al %>% arrange(timestamp)
-  tsBegin <- al[1,]$timestamp + 240
+  tsBegin <- al[1,]$timestamp + warmup
   al <- al %>% filter(timestamp > tsBegin)
   
   #al$exp_dur_ms <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1]) * 1000
@@ -22,8 +22,9 @@ read.accesslog <- function(f) {
   return(al)
 }
 
-accesslog <- function(outdir, exp, n) {
-  al <- read.accesslog(paste(outdir, "/al_", exp, "_1.log", sep=""))
+accesslog <- function(outdir, exp, n, warmup) {
+  fname <- paste(outdir, "/al_", exp, "_1.log", sep="")
+  al <- read.accesslog(fname, warmup)
   al["expid"] <- 1
   al["id"] <- seq(1,NROW(al))
   if (n == 1) {
