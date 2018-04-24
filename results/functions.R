@@ -31,7 +31,7 @@ accesslog <- function(outdir, exp, n, warmup) {
     return(al)
   }
   for (i in 2:n) {
-    aux <- read.accesslog(paste(outdir, "/al_", exp, "_", i,".log", sep=""))
+    aux <- read.accesslog(paste(outdir, "/al_", exp, "_", i,".log", sep=""), warmup)
     aux["expid"] <- i
     aux["id"] <- seq(1,NROW(aux))
     al <- rbind(al, aux)
