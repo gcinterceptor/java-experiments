@@ -1,0 +1,63 @@
+{
+  "profile": "tabular-data-package",
+  "resources": [
+    {
+      "name": "gci",
+      "path": "al_gci_T80_1.log",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "number",
+            "format": "default"
+          },
+          {
+            "name": "status",
+            "type": "integer",
+            "format": "default"
+          },
+          {
+            "name": "request_time",
+            "type": "number",
+            "format": "default"
+          },
+          {
+            "name": "upstream_response_time",
+            "type": "string",
+            "format": "default"
+          }
+        ]
+      }
+    },
+    {
+      "name": "nogci",
+      "path": "al_nogci_T80_1.log",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "number",
+            "format": "default"
+          },
+          {
+            "name": "status",
+            "type": "integer",
+            "format": "default"
+          },
+          {
+            "name": "request_time",
+            "type": "number",
+            "format": "default"
+          },
+          {
+            "name": "upstream_response_time",
+            "type": "string",
+            "format": "default"
+          }
+        ]
+      }
+    }
+  ]
+}
