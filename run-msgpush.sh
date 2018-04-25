@@ -41,6 +41,7 @@ echo "CONNECTIONS: ${CONNECTIONS:=2}"
 echo "JVMARGS: ${JVMARGS:=-XX:+UseParallelGC -XX:NewRatio=1}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
 echo "WRK:${WRK:=wrk}"
+echo "INSTANCES:${INSTANCES:=}"
 
 
 for round in `seq ${ROUND_START} ${ROUND_END}`
