@@ -9,5 +9,5 @@ This tool converts custom formatted NGINXs acesslogs into a CSV which is going t
 * Example of usage:
 
 ```sh
-./altosim --al_datapackage=../../../2i/al_datackage.json --resource=gci --warmup=120s > sim_gci.csv
+./altosim --al_datapackage=../../../2i/al_datackage.json --resource=gci1,gc2 --warmup=120s > sim_gci.csv
 ```
