@@ -1,3 +1,13 @@
+// gcshed consolidates shed and GC information.
+//
+// Usage example:
+// ./gcshed --shed_files=shed_1.csv,shed_2.csv --gc_files=gc_1.log,gc_2.log,gc_3.log
+//
+// The output is CSV-formatted which the following columns:
+// * Duration (in millis)
+// * Number of requests processed before this collection
+// * Number of requests shed during the unavailability period
+// * Run ID (which referencing each of the passed-in file)
 package main
 
 import (
@@ -32,19 +42,21 @@ func main() {
 		gcEntries := readGCLog(gcSlice[i])
 		shedEntries := readCSVRows(shedSlice[i])
 		shedIndex := 1
-		var elapsed, totalTime int64
+		var elapsed, duration int64
 		var proc, shed string
 		for _, entry := range gcEntries {
+			// In Java 1.8,  -XX:+UseParallelOldGC -XX:+UseParallelGC, the System.gc() call (used by GCI)
+			// ends pausing the JVM twice: one for young and another one for full GC.
 			if entry.Reason == "System.gc()" && entry.Type == "Young" {
 				procShed := shedEntries[shedIndex]
 				proc = procShed[0]
 				shed = procShed[1]
 				elapsed = int64(entry.Elapsed.Seconds() * 1000)
-				totalTime = int64(entry.Duration.Seconds() * 1000)
+				duration = int64(entry.Duration.Seconds() * 1000)
 				shedIndex++
 			} else if entry.Reason == "System.gc()" && entry.Type == "Full" && elapsed > int64((*warmup).Seconds()*1000) {
-				totalTime += int64(entry.Duration.Seconds() * 1000)
-				fmt.Printf("%d,%s,%s,%d\n", elapsed, proc, shed, totalTime)
+				duration += int64(entry.Duration.Seconds() * 1000)
+				fmt.Printf("%d,%s,%s,%d\n", duration, proc, shed, i)
 			}
 		}
 	}
