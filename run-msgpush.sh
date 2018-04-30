@@ -42,6 +42,8 @@ echo "JVMARGS: ${JVMARGS:=-XX:+UseParallelGC -XX:NewRatio=1}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
 echo "WRK:${WRK:=wrk}"
 echo "INSTANCES:${INSTANCES:=}"
+echo "COMPUTING_TIME_MS:${COMPUTING_TIME_MS:=15}"
+echo "SLEEP_TIME_MS:${SLEEP_TIME_MS:=5}"
 
 
 for round in `seq ${ROUND_START} ${ROUND_END}`
@@ -50,7 +52,7 @@ do
     echo "round ${round}: Bringing up server instances..."
     for instance in ${INSTANCES};
     do
-        ssh ${instance} "${START_PROXY} killall java 2>/dev/null; rm gc.log shed.csv 2>/dev/null; killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} nohup java -server -Xlog:gc* -Xlog:gc:gc.log ${JVMARGS} -jar -Dserver.port=${SERVER_PORT} msgpush.jar >msgpush.out 2>msgpush.err & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
+        ssh ${instance} "${START_PROXY} killall java 2>/dev/null; rm gc.log shed.csv 2>/dev/null; killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} COMPUTING_TIME_MS=${COMPUTING_TIME_MS} SLEEP_TIME_MS=${SLEEP_TIME_MS} nohup java -server -Xlog:gc* -Xlog:gc:gc.log ${JVMARGS} -jar -Dserver.port=${SERVER_PORT} msgpush.jar >msgpush.out 2>msgpush.err & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
     done
 
     sleep 5
