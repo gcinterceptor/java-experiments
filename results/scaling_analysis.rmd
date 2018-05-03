@@ -1,0 +1,112 @@
+---
+title: "Simulator Scaling analysis"
+author: "David Quaresma"
+date: "March, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=T)
+
+require(gridExtra)
+require(boot)
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+
+source("functions.R")
+
+RESAMPLES <- 1000
+WARMUP_SECS <- 120
+```
+
+```{r, cache=T}
+i1.gci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/1i/sim_lb_gci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/1i/sim_lb_gci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/1i/sim_lb_gci_3.csv")
+)
+i2.gci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/2i/sim_lb_gci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/2i/sim_lb_gci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/2i/sim_lb_gci_3.csv")
+)
+i4.gci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/4i/sim_lb_gci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/4i/sim_lb_gci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/4i/sim_lb_gci_3.csv")
+)
+i16.gci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/16i/sim_lb_gci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/16i/sim_lb_gci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/control/16i/sim_lb_gci_3.csv")
+)
+i1.gci.succ <- i1.gci %>% filter(done == "True")
+i1.gci.succ$type <- "GCI ON"
+i1.gci.succ$instances <- "1 Instance"
+i2.gci.succ <- i2.gci %>% filter(done == "True")
+i2.gci.succ$type <- "GCI ON"
+i2.gci.succ$instances <- "2 Instances"
+i4.gci.succ <- i4.gci %>% filter(done == "True")
+i4.gci.succ$type <- "GCI ON"
+i4.gci.succ$instances <- "4 Instances"
+i16.gci.succ <- i16.gci %>% filter(done == "True")
+i16.gci.succ$type <- "GCI ON"
+i16.gci.succ$instances <- "16 Instances"
+
+i1.nogci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/1i/sim_lb_nogci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/1i/sim_lb_nogci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/1i/sim_lb_nogci_3.csv")
+)
+i2.nogci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/2i/sim_lb_nogci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/2i/sim_lb_nogci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/2i/sim_lb_nogci_3.csv")
+)
+i4.nogci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/4i/sim_lb_nogci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/4i/sim_lb_nogci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/4i/sim_lb_nogci_3.csv")
+)
+i16.nogci <- rbind(
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/16i/sim_lb_nogci_1.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/16i/sim_lb_nogci_2.csv"),
+  read.csv("/home/dfquaresma/Desktop/Rep/gci-simulator/results/baseline/16i/sim_lb_nogci_3.csv")
+)
+i1.nogci <- i1.nogci %>% filter(done == "True")
+i1.nogci$type <- "GCI OFF"
+i1.nogci$instances <- "1 Instance"
+i2.nogci <- i2.nogci %>% filter(done == "True")
+i2.nogci$type <- "GCI OFF"
+i2.nogci$instances <- "2 Instances"
+i4.nogci <- i4.nogci %>% filter(done == "True")
+i4.nogci$type <- "GCI OFF"
+i4.nogci$instances <- "4 Instances"
+i16.nogci <- i16.nogci %>% filter(done == "True")
+i16.nogci$type <- "GCI OFF"
+i16.nogci$instances <- "16 Instances"
+```
+
+```{r}
+all <- rbind(i1.gci.succ, i1.nogci, i2.gci.succ, i2.nogci, i4.gci.succ, i4.nogci,i16.gci.succ, i16.nogci)
+all$instances <- ordered(all$instances, levels=c("1 Instance", "2 Instances", "4 Instances", "16 Instances"))
+
+
+
+ggplot(all, aes(x=type, y=latency)) + 
+  geom_boxplot() +
+  facet_wrap(~ instances)
+```
+
+
+## Failures
+
+* 1 Instance: `r (NROW(filter(i1.gci, done == "False"))/NROW(i1.gci))*100`%
+* 2 Instance: `r (NROW(filter(i2.gci, done == "False"))/NROW(i2.gci))*100`%
+* 4 Instance: `r (NROW(filter(i4.gci, done == "False"))/NROW(i4.gci))*100`%
+* 16 Instance: `r (NROW(filter(i16.gci, done == "False"))/NROW(i16.gci))*100`%
+
