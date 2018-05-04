@@ -56,7 +56,7 @@ func main() {
 				shedIndex++
 			} else if entry.Reason == "System.gc()" && entry.Type == "Full" && elapsed > int64((*warmup).Seconds()*1000) {
 				duration += int64(entry.Duration.Seconds() * 1000)
-				fmt.Printf("%d,%s,%s,%d\n", duration, proc, shed, i)
+				fmt.Printf("%s,%s,%d,%d\n", proc, shed, duration, i)
 			}
 		}
 	}
@@ -87,7 +87,7 @@ type gcLogEntry struct {
 	Duration  time.Duration
 }
 
-var gcRegexp = regexp.MustCompile("\\[(.*s)\\].* GC\\((\\d+)\\) Pause (.*) \\((.*)\\) (\\d+)M->(\\d+)M\\((\\d+)M\\) \\(.*\\) (.*)$")
+var gcRegexp = regexp.MustCompile("\\[(.*s)\\].* GC\\((\\d+)\\) Pause (.*) \\((.*)\\) (\\d+)M->(\\d+)M\\((\\d+)M\\) (.*)$")
 
 func readGCLog(p string) []gcLogEntry {
 	f, err := os.Open(p)
