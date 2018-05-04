@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -33,6 +34,8 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Println("timestamp,status,request_time") // Output header.
+
 	resources := strings.Split(*resource, ",")
 	for _, r := range resources {
 		var entries []entry
@@ -44,13 +47,11 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Println("timestamp,status,request_time") // Output header.
-
 		first := entries[0].Timestamp * 1000 // Converting to ms.
 		delta := float64(*warmup / 1e6)      // Converting to ms.
 		for _, e := range entries {
 			e.Timestamp = e.Timestamp * 1000
-			if e.Timestamp >= first+delta {
+			if e.Timestamp >= first+delta && e.Status == http.StatusOK {
 				fmt.Printf("%d,%d,%d\n", int64(e.Timestamp), e.Status, int64(e.RequestTime*1000)) // Converting request time to ms.
 			}
 		}
