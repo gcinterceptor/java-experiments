@@ -1,6 +1,7 @@
 package com.gcinterceptor.server;
 
 import java.io.BufferedWriter;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
 import java.nio.file.Files;
@@ -57,6 +58,9 @@ public class Server {
 		HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
 		server.createContext("/", (HttpExchange t) -> {
 			long startTime = System.nanoTime();
+			InputStream is = t.getRequestBody();
+			while (is.read() != -1) {}
+			is.close();
 			int statusCode = 200;
 			ShedResponse shedResponse = gci.before(t.getRequestHeaders().getFirst(GCI_HEADERS_NAME));
 			if (shedResponse.shouldShed) {
@@ -66,7 +70,7 @@ public class Server {
 			}
 			gci.after(shedResponse);
 			t.sendResponseHeaders(statusCode, 0);
-			t.getResponseBody().close();
+			t.close();
 			long finishTime = System.nanoTime();
 			stWriter.write(Long.toString(TimeUnit.NANOSECONDS.toMillis(finishTime - startTime)));
 			stWriter.newLine();
