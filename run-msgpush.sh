@@ -38,7 +38,7 @@ echo "WINDOW_SIZE: ${WINDOW_SIZE:=1}"
 echo "SUFFIX: ${SUFFIX:=}"
 echo "THREADS: ${THREADS:=1}"
 echo "CONNECTIONS: ${CONNECTIONS:=2}"
-echo "JVMARGS: ${JVMARGS:=-XX:+UseParallelGC -XX:NewRatio=1}"
+echo "JVMARGS: ${JVMARGS:=}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
 echo "WRK:${WRK:=wrk}"
 echo "INSTANCES:${INSTANCES:=}"
@@ -52,7 +52,7 @@ do
     echo "round ${round}: Bringing up server instances..."
     for instance in ${INSTANCES};
     do
-        ssh ${instance} "${START_PROXY} killall java 2>/dev/null; rm gc.log shed.csv 2>/dev/null; killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} COMPUTING_TIME_MS=${COMPUTING_TIME_MS} SLEEP_TIME_MS=${SLEEP_TIME_MS} nohup java -server -Xlog:gc* -Xlog:gc:gc.log ${JVMARGS} -jar -Dserver.port=${SERVER_PORT} msgpush.jar >msgpush.out 2>msgpush.err & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
+        ssh ${instance} "${START_PROXY} killall java 2>/dev/null; rm gc.log shed.csv st.csv 2>/dev/null; killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} PORT=${SERVER_PORT} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} COMPUTING_TIME_MS=${COMPUTING_TIME_MS} SLEEP_TIME_MS=${SLEEP_TIME_MS} nohup java ${JVMARGS} -jar  msgpush.jar >msgpush.out 2>msgpush.err & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
     done
 
     sleep 5
@@ -63,7 +63,7 @@ do
     i=0
     for instance in ${INSTANCES};
     do
-        cmd="killall java; killall gci-proxy; killall pidstat; mv cpu.csv cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv gc.log gc_${FILE_NAME_SUFFIX}_${i}_${round}.log; mv shed.csv shed_${FILE_NAME_SUFFIX}_${i}_${round}.csv"
+        cmd="killall java; killall gci-proxy; killall pidstat; mv cpu.csv cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv gc.log gc_${FILE_NAME_SUFFIX}_${i}_${round}.log; mv shed.csv shed_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv st.csv st_${FILE_NAME_SUFFIX}_${i}_${round}.csv"
         ssh ${instance} "$cmd"
         ((i++))
     done
@@ -76,9 +76,9 @@ do
     i=0
     for instance in ${INSTANCES};
     do
-        scp ${instance}:~/\{cpu*.csv,gc*.log,shed*.csv\} ${OUTPUT_DIR}
+        scp ${instance}:~/\{cpu*.csv,gc*.log,shed*.csv,st*.csv\} ${OUTPUT_DIR}
         sed -i '1i time,ampm,uid,pid,usr,system,guest,cpu,cpuid' ${OUTPUT_DIR}/cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv
-        ssh ${instance} "rm ~/cpu*.csv ~/gc*.log ~/shed*.csv"
+        ssh ${instance} "rm ~/cpu*.csv ~/gc*.log ~/shed*.csv ~/st*.csv"
         ((i++))
     done
     echo "round ${round}: Finished."
