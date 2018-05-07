@@ -1,7 +1,10 @@
 package com.gcinterceptor.server;
 
-import java.io.OutputStream;
+import java.io.BufferedWriter;
 import java.net.InetSocketAddress;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.util.concurrent.TimeUnit;
 
 import com.gcinterceptor.core.GarbageCollectorControlInterceptor;
 import com.gcinterceptor.core.ShedResponse;
@@ -39,21 +42,49 @@ public class Server {
 	}
 
 	public static void main(String[] args) throws Exception {
+		BufferedWriter stWriter = Files.newBufferedWriter(Paths.get("st.csv"));
+		Runtime.getRuntime().addShutdownHook(new Thread() { // Ensure that the file will be closed at the end.
+			public void run() {
+				try {
+					stWriter.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+
+		(new Thread() {
+			public void run() {
+				while (true) {
+					try {
+						TimeUnit.MILLISECONDS.sleep(500);
+						stWriter.flush();
+					} catch(Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		}).start();
+
+
 		GarbageCollectorControlInterceptor gci = new GarbageCollectorControlInterceptor();
 		HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
 		server.createContext("/", (HttpExchange t) -> {
+			long startTime = System.nanoTime();
 			int statusCode = 200;
 			ShedResponse shedResponse = gci.before(t.getRequestHeaders().getFirst(GCI_HEADERS_NAME));
 			if (shedResponse.shouldShed) {
 				statusCode = 503;
-				System.out.println("Shed");
 			} else {
 				handler();
-				System.out.println("Handled");
 			}
 			gci.after(shedResponse);
 			t.sendResponseHeaders(statusCode, 0);
 			t.getResponseBody().close();
+			long finishTime = System.nanoTime();
+			stWriter.write(Long.toString(TimeUnit.NANOSECONDS.toMillis(finishTime - startTime)));
+			stWriter.newLine();
+
 		});		
 		server.setExecutor(null); 
 		server.start();
