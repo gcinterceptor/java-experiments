@@ -21,7 +21,7 @@ then
 else
     USE_GCI="true"
     FILE_NAME_SUFFIX="gci"
-    START_PROXY="killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; GOMAXPROCS=1 nohup ./gci-proxy >unavailability.csv 2>/dev/null & sleep 5s;"
+    START_PROXY="killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; GOMAXPROCS=1 GOGC=off nohup ./gci-proxy >unavailability.csv 2>proxy.err & sleep 5s;"
     SERVER_PORT=8080
 fi
 
@@ -37,10 +37,9 @@ echo "THROUGHPUT: ${THROUGHPUT:=80}"
 echo "WINDOW_SIZE: ${WINDOW_SIZE:=1}"
 echo "SUFFIX: ${SUFFIX:=}"
 echo "THREADS: ${THREADS:=1}"
-echo "CONNECTIONS: ${CONNECTIONS:=2}"
 echo "JVMARGS: ${JVMARGS:=}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
-echo "WRK:${WRK:=wrk}"
+echo "LOAD_CLIENT:${LOAD_CLIENT:=hey}"
 echo "INSTANCES:${INSTANCES:=}"
 echo "COMPUTING_TIME_MS:${COMPUTING_TIME_MS:=15}"
 echo "SLEEP_TIME_MS:${SLEEP_TIME_MS:=5}"
@@ -57,7 +56,7 @@ do
 
     sleep 5
     echo "round ${round}: Done. Starting load test..."
-    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall wrk 2>/dev/null; ${WRK} -t${THREADS} -c${CONNECTIONS} -d${EXPERIMENT_DURATION} -R${THROUGHPUT} --timeout=1s http://localhost > ~/wrk_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
+    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall ${LOAD_CLIENT} 2>/dev/null; ${LOAD_CLIENT} -m GET -t 1 -c ${THREADS} -z ${EXPERIMENT_DURATION} -q ${THROUGHPUT} -cpus 1 http://localhost > ~/client_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
 
     echo "round ${round}: Done. Putting server instances down..."
     i=0
