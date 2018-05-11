@@ -38,6 +38,8 @@ public class Server {
 	public static void main(String[] args) throws Exception {
 		GarbageCollectorControlInterceptor gci = new GarbageCollectorControlInterceptor();
 		ServerSocket server = new ServerSocket(PORT);
+		server.setReuseAddress(true);
+		server.setSoTimeout(1000);
 		while (true) {
 			try (Socket socket = server.accept()) {
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));	
