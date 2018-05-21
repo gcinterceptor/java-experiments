@@ -1,5 +1,4 @@
 #!/bin/bash
-# IMPORTANT: This script requires pidstats (part of sysstas package).
 
 date
 set -x
@@ -15,14 +14,14 @@ set -x
 # GCI on/off switcher.
 if [ "$USE_GCI" == "false" ];
 then
-    FILE_NAME_SUFFIX="nogci"
-    START_PROXY=""
-    SERVER_PORT=3000
+	FILE_NAME_SUFFIX="nogci"
+	START_PROXY=""
+	SERVER_PORT=3000
 else
-    USE_GCI="true"
-    FILE_NAME_SUFFIX="gci"
-    START_PROXY="killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; GOMAXPROCS=1 GOGC=off nohup ./gci-proxy >unavailability.csv 2>proxy.err & sleep 5s;"
-    SERVER_PORT=8080
+	USE_GCI="true"
+	FILE_NAME_SUFFIX="gci"
+	START_PROXY="killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; nohup ./gci-proxy >unavailability.csv 2>proxy.err & sleep 5s;"
+	SERVER_PORT=8080
 fi
 
 # Experiment configuration
@@ -44,43 +43,49 @@ echo "INSTANCES:${INSTANCES:=}"
 echo "COMPUTING_TIME_MS:${COMPUTING_TIME_MS:=15}"
 echo "SLEEP_TIME_MS:${SLEEP_TIME_MS:=5}"
 
-
 for round in `seq ${ROUND_START} ${ROUND_END}`
 do
-    echo ""
-    echo "round ${round}: Bringing up server instances..."
-    for instance in ${INSTANCES};
-    do
-        ssh ${instance} "${START_PROXY} killall java 2>/dev/null; rm gc.log shed.csv st.csv 2>/dev/null; killall pidstat 2>/dev/null; USE_GCI=${USE_GCI} PORT=${SERVER_PORT} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} COMPUTING_TIME_MS=${COMPUTING_TIME_MS} SLEEP_TIME_MS=${SLEEP_TIME_MS} nohup java ${JVMARGS} -jar  msgpush.jar >msgpush.out 2>msgpush.err & nohup pidstat -C java 1 | grep java | sed s/,/./g |  awk '{if (\$0 ~ /[0-9]/) { print \$1\",\"\$2\",\"\$3\",\"\$4\",\"\$5\",\"\$6\",\"\$7\",\"\$8\",\"\$9; }  }'> cpu.csv 2>/dev/null &"
-    done 
+	date
+	echo ""
+	echo "round ${round}: Bringing up server instances..."
+	for instance in ${INSTANCES};
+	do
+		ssh ${instance} "killall gci-proxy 2>/dev/null; killall java 2>/dev/null; rm gc.log shed.csv st.csv 2>/dev/null; killall mon.sh 2>/dev/null; USE_GCI=${USE_GCI} PORT=${SERVER_PORT} SHED_RATIO_CSV_FILE=shed.csv WINDOW_SIZE=${WINDOW_SIZE} MSG_SIZE=${MSG_SIZE} COMPUTING_TIME_MS=${COMPUTING_TIME_MS} SLEEP_TIME_MS=${SLEEP_TIME_MS} YOUNG_GEN=${YOUNG_GEN} nohup java ${JVMARGS} -Dserver.port=${SERVER_PORT} -jar  msgpush.jar  >msgpush.out 2>msgpush.err & nohup ./mon.sh >cpu.csv 2>/dev/null &"
+	done 
 
-    sleep 5
-    echo "round ${round}: Done. Starting load test..."
-    ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall ${LOAD_CLIENT} 2>/dev/null; ${LOAD_CLIENT} -m GET -t 1 -c ${THREADS} -z ${EXPERIMENT_DURATION} -q ${THROUGHPUT} -cpus 1 http://localhost > ~/client_${FILE_NAME_SUFFIX}_${round}.out; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
+	if [ "$USE_GCI" == "true" ]; 
+	then
+		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; nohup ./gci-proxy -url=http://10.11.23.251:8080 >unavailability.csv 2>proxy.err & sleep 5s;"
+	fi
 
-    echo "round ${round}: Done. Putting server instances down..."
-    i=0
-    for instance in ${INSTANCES};
-    do
-        cmd="killall java; killall gci-proxy; killall pidstat; mv cpu.csv cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv gc.log gc_${FILE_NAME_SUFFIX}_${i}_${round}.log; mv shed.csv shed_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv st.csv st_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv proxy_latency.csv proxy_latency_${FILE_NAME_SUFFIX}_${i}_${round}.csv"
-        ssh ${instance} "$cmd"
-        ((i++))
-    done
+	sleep 5
+	echo "round ${round}: Done. Starting load test..."
+	ssh ${LB} "sudo rm /var/log/nginx/*.log;  sudo systemctl restart nginx; killall vegeta >/dev/null 2>&1; ${LOAD_CLIENT} >~/client_${FILE_NAME_SUFFIX}_${round}.out 2>~/client_${FILE_NAME_SUFFIX}_${round}.err; cp /var/log/nginx/access.log ~/al_${FILE_NAME_SUFFIX}_${round}.log; cp /var/log/nginx/error.log ~/nginx_error_${FILE_NAME_SUFFIX}_${round}.log"
 
-    echo "round ${round}: Done. Copying results and cleaning up instances..."
-    scp ${LB}:~/\{*log,*.out\} ${OUTPUT_DIR}
-    ssh ${LB} "rm *.log; rm *.out"
-    sed -i '1i timestamp;status;request_time;upstream_response_time' ${OUTPUT_DIR}/al_${FILE_NAME_SUFFIX}_${round}.log
+	echo "round ${round}: Done. Putting server instances down..."
+	i=0
+	for instance in ${INSTANCES};
+	do
+		cmd="killall java; killall gci-proxy; killall mon.sh; mv cpu.csv cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv gc.log gc_${FILE_NAME_SUFFIX}_${i}_${round}.log; mv shed.csv shed_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv st.csv st_${FILE_NAME_SUFFIX}_${i}_${round}.csv; mv proxy_latency.csv proxy_latency_${FILE_NAME_SUFFIX}_${i}_${round}.csv"
+		ssh ${instance} "$cmd"
+		((i++))
+	done
 
-    i=0
-    for instance in ${INSTANCES};
-    do
-        scp ${instance}:~/\{cpu*.csv,gc*.log,shed*.csv,st*.csv,proxy_latency*.csv\} ${OUTPUT_DIR}
-        sed -i '1i time,ampm,uid,pid,usr,system,guest,cpu,cpuid' ${OUTPUT_DIR}/cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv
-        ssh ${instance} "rm ~/cpu*.csv ~/gc*.log ~/shed*.csv ~/st*.csv ~/proxy_latency*.csv"
-        ((i++))
-    done
-    echo "round ${round}: Finished."
-    echo ""
-    sleep 5s
+	echo "round ${round}: Done. Copying results and cleaning up instances..."
+	scp ${LB}:~/\{*log,*.out,*.err\} ${OUTPUT_DIR}
+	ssh ${LB} "rm *.log; rm *.out *.err"
+	sed -i '1i timestamp;status;request_time;upstream_response_time' ${OUTPUT_DIR}/al_${FILE_NAME_SUFFIX}_${round}.log
+
+	i=0
+	for instance in ${INSTANCES};
+	do
+		scp ${instance}:~/\{cpu*.csv,gc*.log,shed*.csv,st*.csv,proxy_latency*.csv\} ${OUTPUT_DIR}
+		sed -i '1i time,ampm,uid,pid,usr,system,guest,cpu,cpuid' ${OUTPUT_DIR}/cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv
+		ssh ${instance} "rm ~/cpu*.csv ~/gc*.log ~/shed*.csv ~/st*.csv ~/proxy_latency*.csv *.err"
+		((i++))
+	done
+	echo "round ${round}: Finished."
+	echo ""
+	date
+	sleep 5s
 done
