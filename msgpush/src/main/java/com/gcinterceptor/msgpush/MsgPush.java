@@ -30,10 +30,6 @@ public class MsgPush {
 		if (WINDOW_SIZE>0) {
 			buffer = new byte[WINDOW_SIZE][MSG_SIZE];
 		}
-		// Optional variables.
-		try {
-			COMPUTING_TIME_MS = Integer.parseInt(System.getenv("COMPUTING_TIME_MS"));
-		} catch (NumberFormatException nfe) {}
 		try {
 			SLEEP_TIME_MS = Integer.parseInt(System.getenv("SLEEP_TIME_MS"));
 		} catch (NumberFormatException nfe){}		
@@ -64,9 +60,6 @@ public class MsgPush {
 		@RequestMapping("/*")
 		public void index() throws InterruptedException {
 			byte[] byteArray = new byte[MSG_SIZE];
-			//for (int i = 0; i < MSG_SIZE; i++) {
-			//	byteArray[i] = (byte) Math.random();
-			//}
 			long tokens = 1000000;
 			long aux = System.nanoTime();
 			for (long i = tokens; i > 0; i--) {
@@ -95,11 +88,6 @@ public class MsgPush {
 
 			if (SLEEP_TIME_MS > 0) {
 				Thread.sleep(SLEEP_TIME_MS);
-			}
-			if (COMPUTING_TIME_MS > 0) {
-				long t = COMPUTING_TIME_MS + System.currentTimeMillis();
-				while (t > System.currentTimeMillis()) {
-				}
 			}
 		}
 	}
