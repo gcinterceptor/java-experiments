@@ -76,6 +76,11 @@ do
 	ssh ${LB} "rm *.log; rm *.out *.err"
 	sed -i '1i timestamp;status;request_time;upstream_response_time' ${OUTPUT_DIR}/al_${FILE_NAME_SUFFIX}_${round}.log
 
+	if [ "$USE_GCI" == "true" ];
+	then
+		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null"
+	fi
+
 	i=0
 	for instance in ${INSTANCES};
 	do

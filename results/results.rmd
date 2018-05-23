@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=F)
 knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=F)
 
 require(gridExtra)
 require(boot)
@@ -15,49 +16,149 @@ require(dplyr)
 require(stringr)
 require(cowplot)
 require(ggplot2)
+require(reshape2)
 
 source("functions.R")
 
-SAMPLE_SIZE <- 2500
+SAMPLE_SIZE <- 1000
 RESAMPLES <- 1000
-WARMUP_SECS <- 20
+WARMUP_SECS <- 180
+
+q.plot.data <- function(df) {
+  q <-  df %>% group_by(trunc(timestamp)) %>% summarize(
+    q50 = quantile(request_time, 0.5),
+    q90 = quantile(request_time, 0.9),
+    q99 = quantile(request_time, 0.99),
+    q999 = quantile(request_time, 0.999),
+    q9999 = quantile(request_time, 0.9999),
+    max = max(request_time))
+  q <- melt(q, id="trunc(timestamp)")
+  colnames(q) <- c("ts", "func", "value")
+  return(q)
+}
 ```
+
+# Experiment Design
+
+* Back to simplicity: GC impacts on latency and we would like to avoid **this** impact.
+* Variables:
+     * Pressure on heap: controlled by the amount of memory heap by each request.
+     * State Kept (yes or no): controlled by an simple array that is allocated at service startup and is updated at each request no
+     * GCI (on or off)
+
+# Experiment Results
+
+## Setup
+
+* 1 service instance
+* VM with 2 cores and 1GB RAM
+* Simple HTTP service
+     * Only consumes CPU
+     * Extracted from [Java Microbenchmark Harness](http://openjdk.java.net/projects/code-tools/jmh/). More specifcally, the 
+     [Consume CPU benchmark](http://hg.openjdk.java.net/code-tools/jmh/file/3769055ad883/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_21_ConsumeCPU.java).
+     
+
 
 # Latency comparison
 
 ```{r}
-al1.exp.gci.warm <- accesslog("1i", "gci_T80_Java9_WithFullGC", 1, WARMUP_SECS)
-al1.exp.nogci.warm <- accesslog("1i", "nogci_T80_Java9_WithFullGC", 1, WARMUP_SECS)
+#al1.exp.gci.warm <- accesslog("1i", "gci_T100_M65536_W1024", 1, WARMUP_SECS)
+al1.exp.gci.warm <- accesslog("1i", "gci_T100_M262144_W0", 1, WARMUP_SECS)
 al1.exp.gci <- filter(al1.exp.gci.warm, status == 200)
-al1.exp.nogci <- filter(al1.exp.nogci.warm, status == 200)
 
-print(paste("Number of succeeded requests (GCI ON): ", NROW(al1.exp.gci)))
+print(paste("Number of succeeded requests (GCI ON): ", NROW(al1.exp.gci) , "(", (NROW(al1.exp.gci)/NROW(al1.exp.gci.warm))*100,"%)"))
 print(paste("IQR (GCI ON): ", IQR(al1.exp.gci$request_time)))
+print(paste("STDDEV (GCI ON): ",  sd((al1.exp.gci$request_time))))
+print(paste("MAX THROUGHPUT (GCI ON): ", NROW(al1.exp.gci)/(al1.exp.gci$timestamp[NROW(al1.exp.gci)]-al1.exp.gci$timestamp[1])))
 summary(al1.exp.gci$request_time)
+quantile (al1.exp.gci$request_time, c(0.9,0.99,0.999,0.9999,0.99999))
+
+failed.requests.gci <- filter(al1.exp.gci.warm, status == 503)
+print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al1.exp.gci.warm))*100, "% )"))
+if (NROW(failed.requests.gci) > 0) {
+  summary(failed.requests.gci$request_time)
+  hist(failed.requests.gci$request_time)
+}
+
+hist(al1.exp.gci$request_time)
+
+ggplot() +
+  geom_point(data = al1.exp.gci, aes(x = timestamp, y = request_time))+
+  scale_x_continuous(breaks=seq(0,max(al1.exp.gci$timestamp),20)) +
+  ylab("Latência (ms)") +
+  xlab("Andamento do experimento (s)")
+
+ggplot() +
+  geom_line(data = q.plot.data(al1.exp.gci), aes(x = ts, y = value, color = func))+
+  scale_x_continuous(breaks=seq(0,max(al1.exp.gci$timestamp),20)) +
+  ylab("Latência (ms)") +
+  xlab("Andamento do experimento (s)")
+```
+```{r}
+#al1.exp.nogci.warm <- accesslog("1i", "nogci_T100_M65536_W1024", 1 , WARMUP_SECS)
+al1.exp.nogci.warm <- accesslog("1i", "nogci_T100_M262144_W0", 1 , WARMUP_SECS)
+al1.exp.nogci <- filter(al1.exp.nogci.warm, status == 200)
 print(paste("Number of succeeded requests (GCI OFF): ", NROW(al1.exp.nogci)))
 print(paste("IQR (GCI OFF): ", IQR(al1.exp.nogci$request_time)))
+print(paste("STDDEV (GCI OFF): ",  sd((al1.exp.nogci$request_time))))
+print(paste("MAX THROUGHPUT (GCI OFF): ", NROW(al1.exp.nogci)/(al1.exp.nogci$timestamp[NROW(al1.exp.nogci)]-al1.exp.nogci$timestamp[1])))
+print(paste("NUM 99.99 (GCI OFF): ",  NROW(al1.exp.nogci)*0.001))
+print(paste("NUM 99.999 (GCI OFF): ",  NROW(al1.exp.nogci)*0.0001))
 summary(al1.exp.nogci$request_time)
+quantile (al1.exp.nogci$request_time, c(0.9,0.99,0.999,0.9999,0.99999))
+
+hist(al1.exp.nogci$request_time)
+
+failed.requests.gci <- filter(al1.exp.nogci.warm, status == 503)
+print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al1.exp.nogci.warm))*100, "% )"))
+if (NROW(failed.requests.gci) > 0) {
+  summary(failed.requests.nogci$request_time)
+  hist(failed.requests.nogci$request_time)
+}
+
+ggplot() +
+  geom_point(data = al1.exp.nogci, aes(x = timestamp, y = request_time))+
+  scale_x_continuous(breaks=seq(0, max(al1.exp.nogci$timestamp),5)) +
+  ylab("Latência (ms)") +
+  xlab("Andamento do experimento (s)")
+
+ggplot() +
+  geom_line(data = q.plot.data(al1.exp.nogci), aes(x = ts, y = value, color = func))+
+  ylab("Latência (ms)") +
+  xlab("Andamento do experimento (s)")
 ```
 
 ```{r, fig.asp=0.5, fig.align="center"}
-# If you don't trim the library, your computer could die trying to resample.
+#a1 <- al1.exp.gci %>% filter(request_time >= quantile(al1.exp.gci$request_time, 0.99))
+#a2 <- al1.exp.nogci %>% filter(request_time >= quantile(al1.exp.nogci$request_time, 0.99))
 al1.cmp <- rbind(
-  data.frame("latency"=sample(al1.exp.gci$request_time, SAMPLE_SIZE), type="GCI ON"),
-  data.frame("latency"=sample(al1.exp.nogci$request_time, SAMPLE_SIZE), type="GCI OFF"))
+  data.frame("latency"=al1.exp.gci$request_time, type="ON"),
+  data.frame("latency"=al1.exp.nogci$request_time, type="OFF"))
+
 
 grid.arrange(
   ggplot(al1.cmp, aes(type, latency)) +
     geom_boxplot() +
     ggtitle("Summary") +
+    scale_y_continuous(breaks=seq(0,max(al1.cmp$latency), 20)) +
     ylab("Latency(ms)") +
-    xlab("Type"),
+    xlab("GCI"),
    ggplot(al1.cmp, aes(latency, linetype=type)) +
     stat_ecdf() +
     ggtitle("ECDF") +
     xlab("Latency(ms)") +
     ylab("ECDF") +
+    scale_x_continuous(breaks=seq(0,max(al1.cmp$latency), 20)) +
+    coord_cartesian(ylim = c(0.99, 1)) +
     theme(legend.position="top"),
   ncol=2)
+```
+```{r, fig.asp=0.5, fig.align="center"}
+#If you don't trim the library, your computer could die trying to resample.
+al1.cmp <- rbind(
+  data.frame("latency"=sample(al1.exp.gci$request_time, SAMPLE_SIZE), type="ON"),
+  data.frame("latency"=sample(al1.exp.nogci$request_time, SAMPLE_SIZE), type="OFF"))
+
 
 grid.arrange(
   ggplot(al1.cmp, aes(type, latency)) +
@@ -65,44 +166,32 @@ grid.arrange(
     stat_summary(fun.data=ci.median, geom="errorbar", width=0.05) +
     ggtitle("Median") +
     ylab("Latency(ms)") +
-    xlab("Type"),
+    xlab("GCI"),
   ggplot(al1.cmp, aes(type, latency)) +
     stat_summary(fun.y=p99, geom="point", shape=23, size=2) +
     stat_summary(fun.data=ci.p99, geom="errorbar", width=0.05) +
     ggtitle("99 Percentile") +
     ylab("Latency(ms)") +
-    xlab("Type"),
+    xlab("GCI"),
   ggplot(al1.cmp, aes(type, latency)) +
     stat_summary(fun.y=p999, geom="point", shape=23, size=2) +
     stat_summary(fun.data=ci.p999, geom="errorbar", width=0.05) +
     ggtitle("99.9 Percentile") +
     ylab("Latency(ms)") +
-    xlab("Type"),
+    xlab("GCI"),
   ggplot(al1.cmp, aes(type, latency)) +
     stat_summary(fun.y=p9999, geom="point", shape=23, size=2) +
     stat_summary(fun.data=ci.p9999, geom="errorbar", width=0.05) +
     ggtitle("99.99 Percentile") +
     ylab("Latency(ms)") +
+    xlab("GCI"),
+  ggplot(al1.cmp, aes(type, latency)) +
+    stat_summary(fun.y=p99999, geom="point", shape=23, size=2) +
+    stat_summary(fun.data=ci.p99999, geom="errorbar", width=0.05) +
+    ggtitle("99.999 Percentile") +
+    ylab("Latency(ms)") +
     xlab("Type"),
-  ncol=2,
+  ncol=3,
   nrow=2)
-```
-
-# Failed Requests
-
-```{r}
-failed.requests.gci <- filter(al1.exp.gci.warm, status == 503)
-print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al1.exp.gci))*100, "% )"))
-if (NROW(failed.requests.gci) > 0) {
-  summary(failed.requests.gci$request_time)
-  hist(failed.requests.gci$request_time)
-}
-
-failed.requests.nogci <- filter(al1.exp.nogci.warm, status == 503)
-print(paste("Number of failed requests (GCI OFF): ", NROW(failed.requests.nogci), "(", (NROW(failed.requests.nogci)/NROW(al1.exp.nogci))*100, "% )"))
-if (NROW(failed.requests.nogci) > 0) {
-  summary(failed.requests.nogci$request_time)
-  hist(failed.requests.nogci$request_time)
-}
 ```
 

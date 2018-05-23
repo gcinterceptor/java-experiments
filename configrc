@@ -1,0 +1,8 @@
+export COMPUTING_TIME_MS=0
+export SLEEP_TIME_MS=0
+export LOAD=100
+export DURATION=480
+export GCI_OFF_JVMARGS="-server -Xms512m -Xmx512m -Xlog:gc:file=gc.log  -XX:+UseG1GC -XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -XX:+DisableExplicitGC"
+export GCI_ON_JVMARGS="-Djvmtilib=/home/danielfireman/libgc.so -server -Xms512m -Xmx512m -Xlog:gc:file=gc.log  -XX:+UseG1GC -XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -XX:+ExplicitGCInvokesConcurrent -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=50 -XX:G1MaxNewSizePercent=50"
+export YOUNG_GEN=256000000
+export LOAD_CLIENT="echo \"GET http://localhost/\" | ./vegeta attack -duration=${DURATION}s -rate ${LOAD} | tee results.bin | ./vegeta report"

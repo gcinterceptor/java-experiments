@@ -12,6 +12,7 @@ read.accesslog <- function(f, warmup) {
   al <- al %>% arrange(timestamp)
   tsBegin <- al[1,]$timestamp + warmup
   al <- al %>% filter(timestamp > tsBegin)
+  al$timestamp <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1])
   
   #al$exp_dur_ms <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1]) * 1000
   al$hop1 <- sub(',.*$', '', al$upstream_response_time)
@@ -58,6 +59,10 @@ p9999 <- function(x) {
   return(quantile(x, 0.9999))
 }
 
+p99999 <- function(x) {
+  return(quantile(x, 0.99999))
+}
+
 ci.p <- function(x, p) {
   ci.fun <- function(data, indices) {
     return(c(quantile(data[indices], c(p)), var(data)))
@@ -77,4 +82,8 @@ ci.p999 <- function(x) {
 
 ci.p9999 <- function(x) {
   return(ci.p(x, 0.9999))
+}
+
+ci.p99999 <- function(x) {
+  return(ci.p(x, 0.99999))
 }
