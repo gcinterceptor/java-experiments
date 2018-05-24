@@ -60,30 +60,22 @@ public class MsgPush {
 		@RequestMapping("/*")
 		public void index() throws InterruptedException {
 			byte[] byteArray = new byte[MSG_SIZE];
-			long tokens = 1000000;
-			long aux = System.nanoTime();
-			for (long i = tokens; i > 0; i--) {
-				aux += (aux * 0x5DEECE66DL + 0xBL + i) & (0xFFFFFFFFFFFFL);
-			}
 
 			if (WINDOW_SIZE > 0) {
 				buffer[msgCount++ % WINDOW_SIZE] = byteArray;
 			}
 
-			/*long startTime = System.currentTimeMillis();
-			  long max = 5000;
-			  long count = 0;
-			  for (long i = 3; i <= max; i++) {
-			  boolean isPrime = true;
-			  for (long j = 2; j <= i / 2 && isPrime; j++) {
-			  isPrime = i % j > 0;
-			  }
-			  if (isPrime) {
-			  count++;
-			  }
-			  }
-			  long elapsed = System.currentTimeMillis() - startTime;*/
-			//Thread.sleep(elapsed/2);
+			long max = 5000;
+			long count = 0;
+			for (long i = 3; i <= max; i++) {
+				boolean isPrime = true;
+				for (long j = 2; j <= i / 2 && isPrime; j++) {
+					isPrime = i % j > 0;
+				}
+				if (isPrime) {
+					count++;
+				}
+			}
 
 
 			if (SLEEP_TIME_MS > 0) {
