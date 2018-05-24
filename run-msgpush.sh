@@ -15,12 +15,10 @@ set -x
 if [ "$USE_GCI" == "false" ];
 then
 	FILE_NAME_SUFFIX="nogci"
-	START_PROXY=""
 	SERVER_PORT=3000
 else
 	USE_GCI="true"
 	FILE_NAME_SUFFIX="gci"
-	START_PROXY="killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; nohup ./gci-proxy >unavailability.csv 2>proxy.err & sleep 5s;"
 	SERVER_PORT=8080
 fi
 
@@ -40,11 +38,12 @@ echo "JVMARGS: ${JVMARGS:=}"
 FILE_NAME_SUFFIX="${FILE_NAME_SUFFIX}${SUFFIX}"
 echo "LOAD_CLIENT:${LOAD_CLIENT:=hey}"
 echo "INSTANCES:${INSTANCES:=}"
-echo "COMPUTING_TIME_MS:${COMPUTING_TIME_MS:=15}"
 echo "SLEEP_TIME_MS:${SLEEP_TIME_MS:=5}"
 
 for round in `seq ${ROUND_START} ${ROUND_END}`
 do
+	#ssh -i ~/fireman.sururu.key ubuntu@10.11.23.9 "sudo virsh shutdown vm2; sleep 5; sudo virsh start vm2; sleep 30"
+	echo ""
 	date
 	echo ""
 	echo "round ${round}: Bringing up server instances..."
@@ -55,7 +54,7 @@ do
 
 	if [ "$USE_GCI" == "true" ]; 
 	then
-		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null; nohup ./gci-proxy -url=http://10.11.23.251:8080 >unavailability.csv 2>proxy.err & sleep 5s;"
+		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy.* 2>/dev/null; GODEBUG=gctrace=1 nohup ./gci-proxy -url=http://10.11.23.250:8080 >proxy.out 2>proxy.err & sleep 5s;"
 	fi
 
 	sleep 5
@@ -78,7 +77,7 @@ do
 
 	if [ "$USE_GCI" == "true" ];
 	then
-		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy_latency.csv 2>/dev/null"
+		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy.* 2>/dev/null"
 	fi
 
 	i=0
