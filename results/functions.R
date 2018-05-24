@@ -1,5 +1,5 @@
 # Parses the experiment's NGINX log file.
-read.accesslog <- function(f, warmup) {
+read.accesslog <- function(f, warmup, duration) {
   # https://lincolnloop.com/blog/tracking-application-response-time-nginx/
   al <- read.csv(f, sep=";", colClasses=c("upstream_response_time"="character"))
   # request processing time in seconds with a milliseconds resolution;
@@ -11,7 +11,11 @@ read.accesslog <- function(f, warmup) {
   # Filtering out first warmup seconds
   al <- al %>% arrange(timestamp)
   tsBegin <- al[1,]$timestamp + warmup
-  al <- al %>% filter(timestamp > tsBegin)
+  if (duration > 0) {
+    al <- al %>% filter(timestamp > tsBegin & timestamp < (tsBegin + duration))
+  } else {
+    al <- al %>% filter(timestamp > tsBegin)
+  }
   al$timestamp <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1])
   
   #al$exp_dur_ms <- c(0, al$timestamp[2:NROW(al)]-al$timestamp[1]) * 1000
@@ -20,19 +24,24 @@ read.accesslog <- function(f, warmup) {
   al$hop2 <- sub('^.*,', '', al$upstream_response_time)
   al$hop2 <- as.numeric(al$hop2)*1000
   al$num_hops <- str_count(al$upstream_response_time, ',')+1
-  return(al)
+  
+  return(list(
+    warm=al,
+    succ=filter(al, status == 200),
+    fail=filter(al, status == 503)
+  ))
 }
 
-accesslog <- function(outdir, exp, n, warmup) {
+accesslog <- function(outdir, exp, n, warmup, duration) {
   fname <- paste(outdir, "/al_", exp, "_1.log", sep="")
-  al <- read.accesslog(fname, warmup)
+  al <- read.accesslog(fname, warmup, duration)
   al["expid"] <- 1
   al["id"] <- seq(1,NROW(al))
   if (n == 1) {
     return(al)
   }
   for (i in 2:n) {
-    aux <- read.accesslog(paste(outdir, "/al_", exp, "_", i,".log", sep=""), warmup)
+    aux <- read.accesslog(paste(outdir, "/al_", exp, "_", i,".log", sep=""), warmup, duration)
     aux["expid"] <- i
     aux["id"] <- seq(1,NROW(aux))
     al <- rbind(al, aux)
