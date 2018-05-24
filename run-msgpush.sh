@@ -85,7 +85,6 @@ do
 	for instance in ${INSTANCES};
 	do
 		scp ${instance}:~/\{cpu*.csv,gc*.log,shed*.csv,st*.csv,proxy_latency*.csv\} ${OUTPUT_DIR}
-		sed -i '1i time,ampm,uid,pid,usr,system,guest,cpu,cpuid' ${OUTPUT_DIR}/cpu_${FILE_NAME_SUFFIX}_${i}_${round}.csv
 		ssh ${instance} "rm ~/cpu*.csv ~/gc*.log ~/shed*.csv ~/st*.csv ~/proxy_latency*.csv *.err"
 		((i++))
 	done
