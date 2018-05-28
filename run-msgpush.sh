@@ -55,6 +55,10 @@ do
 	if [ "$USE_GCI" == "true" ]; 
 	then
 		ssh ${PROXY} "killall gci-proxy 2>/dev/null; rm proxy.* 2>/dev/null; GODEBUG=gctrace=1 nohup ./gci-proxy -url=http://10.11.23.250:8080 >proxy.out 2>proxy.err & sleep 5s;"
+		ssh ${LB} "sudo cp nginx.gci.conf /etc/nginx/nginx.conf"
+	else
+		ssh ${LB} "sudo cp nginx.nogci.conf /etc/nginx/nginx.conf"
+
 	fi
 
 	sleep 5
