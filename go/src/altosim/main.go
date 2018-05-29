@@ -7,7 +7,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -51,7 +50,7 @@ func main() {
 		delta := float64(*warmup / 1e6)      // Converting to ms.
 		for _, e := range entries {
 			e.Timestamp = e.Timestamp * 1000
-			if e.Timestamp >= first+delta && e.Status == http.StatusOK {
+			if e.Timestamp >= first+delta {
 				fmt.Printf("%d,%d,%d\n", int64(e.Timestamp), e.Status, int64(e.RequestTime*1000)) // Converting request time to ms.
 			}
 		}

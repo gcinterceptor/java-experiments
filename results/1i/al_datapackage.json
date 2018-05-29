@@ -1,0 +1,365 @@
+{
+  "profile": "tabular-data-package",
+  "resources": [
+   {
+      "name": "nogci_hh_sl_1",
+      "path": "al_nogci_T40_M262144_W0_1.log",
+      "description": "GCI off, high heap pressure, stateless, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_hh_sl_2",
+      "path": "al_nogci_T40_M262144_W0_2.log",
+      "description": "GCI off, high heap pressure, stateless, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_hh_sl_3",
+      "path": "al_nogci_T40_M262144_W0_3.log",
+      "description": "GCI off, high heap pressure, stateless, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_hh_sl_1",
+      "path": "al_gci_T40_M262144_W0_1.log",
+      "description": "GCI on, high heap pressure, stateless, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_hh_sl_2",
+      "path": "al_gci_T40_M262144_W0_2.log",
+      "description": "GCI on, high heap pressure, stateless, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_hh_sl_3",
+      "path": "al_gci_T40_M262144_W0_3.log",
+      "description": "GCI on, high heap pressure, stateless, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_lh_sl_1",
+      "path": "al_nogci_T40_M65536_W0_1.log",
+      "description": "GCI off, low heap pressure, stateless, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_lh_sl_2",
+      "path": "al_nogci_T40_M65536_W0_2.log",
+      "description": "GCI off, low heap pressure, stateless, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_lh_sl_3",
+      "path": "al_nogci_T40_M65536_W0_3.log",
+      "description": "GCI off, low heap pressure, stateless, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_lh_sl_1",
+      "path": "al_gci_T40_M65536_W0_1.log",
+      "description": "GCI on, low heap pressure, stateless, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_lh_sl_2",
+      "path": "al_gci_T40_M65536_W0_2.log",
+      "description": "GCI on, low heap pressure, stateless, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_lh_sl_3",
+      "path": "al_gci_T40_M65536_W0_3.log",
+      "description": "GCI on, low heap pressure, stateless, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_hh_sf_1",
+      "path": "al_nogci_T40_M262144_W256_1.log",
+      "description": "GCI off, high heap pressure, stateful, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_hh_sf_2",
+      "path": "al_nogci_T40_M262144_W256_2.log",
+      "description": "GCI off, high heap pressure, stateful, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_hh_sf_3",
+      "path": "al_nogci_T40_M262144_W256_3.log",
+      "description": "GCI off, high heap pressure, stateful, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_hh_sf_1",
+      "path": "al_gci_T40_M262144_W256_1.log",
+      "description": "GCI on, high heap pressure, stateful, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_hh_sf_2",
+      "path": "al_gci_T40_M262144_W256_2.log",
+      "description": "GCI on, high heap pressure, stateful, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_hh_sf_3",
+      "path": "al_gci_T40_M262144_W256_3.log",
+      "description": "GCI on, high heap pressure, stateful, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_lh_sf_1",
+      "path": "al_nogci_T40_M65536_W1024_1.log",
+      "description": "GCI off, low heap pressure, stateful, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_lh_sf_2",
+      "path": "al_nogci_T40_M65536_W1024_2.log",
+      "description": "GCI off, low heap pressure, stateful, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_lh_sf_3",
+      "path": "al_nogci_T40_M65536_W1024_3.log",
+      "description": "GCI off, low heap pressure, stateful, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_lh_sf_1",
+      "path": "al_gci_T40_M65536_W1024_1.log",
+      "description": "GCI on, low heap pressure, stateful, iteration 1.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_lh_sf_2",
+      "path": "al_gci_T40_M65536_W1024_2.log",
+      "description": "GCI on, low heap pressure, stateful, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_lh_sf_3",
+      "path": "al_gci_T40_M65536_W1024_3.log",
+      "description": "GCI on, low heap pressure, stateful, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    }
+  ]
+}
