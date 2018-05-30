@@ -14,10 +14,6 @@ require(dplyr)
 require(stringr)
 require(cowplot)
 require(ggplot2)
-require(reshape2)
-require(car)
-library(moments)
-library(MASS)
 
 source("../results/functions.R")
 
