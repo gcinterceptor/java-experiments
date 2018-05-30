@@ -1,0 +1,475 @@
+---
+title: "GCI-Java reaches the Cloud"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "May, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=F)
+
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+require(reshape2)
+require(car)
+library(moments)
+library(MASS)
+
+source("functions.R")
+
+REP <- 3
+SAMPLE_SIZE <- 1000
+RESAMPLES <- 1000
+WARMUP_SECS <- 240
+DURATION_SECS <- 300
+
+q.plot.data <- function(df) {
+  q <-  df %>% group_by(trunc(timestamp)) %>% summarize(
+    q50 = quantile(request_time, 0.5),
+    q90 = quantile(request_time, 0.9),
+    q99 = quantile(request_time, 0.99),
+    q999 = quantile(request_time, 0.999),
+    q9999 = quantile(request_time, 0.9999),
+    max = max(request_time))
+  q <- melt(q, id="trunc(timestamp)")
+  colnames(q) <- c("ts", "func", "value")
+  return(q)
+}
+```
+
+# 1-Instance
+
+## Setup
+
+* 1 service instance (VM with 2 cores and 1GB RAM). Heap set to 512MB.
+* 1 machine running client, loadbalancer and proxy (for experiments with GCI on)
+* Client sending constant load
+* Simple request processing: allocate memory + do some computation (pretty close to what we did at SBRC)
+
+
+## Design
+
+*  $2^{3}$ factorial design
+
+* Independent variables:
+     * Pressure on heap (high::256KB or low::64KB): emulated by the amount of memory heap allocated by each request.
+     * State Kept (yes or no): emulated by an simple array allocated at service startup and updated by every request
+     * GCI (on or off)
+
+* Dependent variables:
+     * Latency: wall clock time measured from the loadbalancer. Only for requests which have been successfully attended.
+     
+* Constants:
+     * Experiment Duration: 10min (only considered 5 minutes due to warmup)
+     * Load: 40 QPS: The system was around 50% utiilzation. The goal is to minimize the effect of context switching and environment sources of noise (we would like to focus on the impact of the GC on the request time)
+          * It is possible that we add another set of experiments just to analyse the effect of the load
+          in the throughput drop (maybe add it in future work section)
+
+## Results
+
+### GCI Off
+
+How does a simple service without GCI deal with changes in heap pressure and 
+keeping state?
+
+```{r read.nogci}
+nogci.low.nostate <- accesslog("1i", "nogci_T40_M65536_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.low.state <- accesslog("1i", "nogci_T40_M65536_W1024", REP, WARMUP_SECS, DURATION_SECS)
+nogci.high.nostate <- accesslog("1i", "nogci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.high.state <- accesslog("1i", "nogci_T40_M262144_W256",REP, WARMUP_SECS, DURATION_SECS)
+```
+
+```{r}
+nogci.cmp <- rbind(
+  data.frame("latency"=nogci.low.nostate$succ$request_time, type="OFF", state="Stateless", mem="Low HP"),
+  data.frame("latency"=nogci.low.state$succ$request_time, type="OFF", state="Stateful", mem="Low HP"),
+  data.frame("latency"=nogci.high.state$succ$request_time, type="OFF", state="Stateful", mem="High HP"),
+  data.frame("latency"=nogci.high.nostate$succ$request_time, type="OFF", state="Stateless", mem="High HP")
+)
+
+ggplot(nogci.cmp, aes(state, latency, color=mem)) +
+  geom_boxplot() +
+  scale_y_continuous(breaks=seq(0,max(nogci.cmp$latency), 10)) +
+  ylab("Latency(ms)") +
+  theme(axis.title.x=element_blank()) 
+```
+
+**Conclusion**: The boxplots above show that, keeping state and increasing heap pressure
+have an impact in the latency tail. Bellow we print the summary and tail percentiles.
+
+```{r}
+q.nsll <- quantile(nogci.low.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+q.nshl <- quantile(nogci.high.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+q.sll <- quantile(nogci.low.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+q.shl <-  quantile(nogci.high.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+t1 <- as.table(matrix(
+  c(q.nsll[1], q.nsll[1], q.nsll[3], q.nsll[4],
+    q.nshl[1], q.nshl[2], q.nshl[3], q.nshl[4],
+    q.sll[1], q.sll[2], q.sll[3], q.sll[4],
+    q.shl[1], q.shl[2], q.shl[3], q.shl[4]
+  ), ncol=4, byrow=T))
+
+colnames(t1) <- c("99%", "99.9%", "99.99%", "99.999%")
+rownames(t1) <- c(
+ "Stateless & Low Heap Pressure",
+ "Stateless & High Heap Pressure",
+ "Statefull & Low Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+t1
+```
+
+### GCI On
+
+Does GCI help on improving the situation described above. In other words, does the
+tail latency get less affected by the heap pressure and the state kept?
+
+```{r read.gci.on}
+gci.low.nostate <- accesslog("1i", "gci_T40_M65536_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.low.state <- accesslog("1i", "gci_T40_M65536_W1024", REP, WARMUP_SECS, DURATION_SECS)
+gci.high.nostate <- accesslog("1i", "gci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.high.state <- accesslog("1i", "gci_T40_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+```
+
+```{r}
+gci.cmp <- rbind(
+  data.frame("latency"=gci.low.nostate$succ$request_time, type="ON", state="Stateless", mem="Low HP"),
+  data.frame("latency"=gci.low.state$succ$request_time, type="ON", state="Stateful", mem="Low HP"),
+  data.frame("latency"=gci.high.state$succ$request_time, type="ON", state="Stateful", mem="High HP"),
+  data.frame("latency"=gci.high.nostate$succ$request_time, type="ON", state="Stateless", mem="High HP")
+)
+
+ggplot(gci.cmp, aes(state, latency, color=mem)) +
+  geom_boxplot() +
+  scale_y_continuous(breaks=seq(0,max(gci.cmp$latency), 10)) +
+  ylab("Latency(ms)") +
+  theme(axis.title.x=element_blank()) 
+```
+
+**Conclusion**: The boxplots above show that, GCI usage decreases the negative
+impact of memory pressure and state, shortening the latency tail.
+
+```{r}
+q.nsll <- quantile(gci.low.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+q.nshl <- quantile(gci.high.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+q.sll <- quantile(gci.low.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+q.shl <-  quantile(gci.high.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
+
+t1.gci <- as.table(matrix(
+  c(q.nsll[1], q.nsll[1], q.nsll[3], q.nsll[4],
+    q.nshl[1], q.nshl[2], q.nshl[3], q.nshl[4],
+    q.sll[1], q.sll[2], q.sll[3], q.sll[4],
+    q.shl[1], q.shl[2], q.shl[3], q.shl[4]
+  ), ncol=4, byrow=T))
+
+colnames(t1.gci) <- c("99%", "99.9%", "99.99%", "99.999")
+rownames(t1.gci) <- c(
+ "Stateless & Low Heap Pressure",
+ "Stateless & High Heap Pressure",
+ "Statefull & Low Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+t1.gci
+```
+
+### Comparison (GCI On X GCI Off)
+
+**Latency Tail**
+
+```{r}
+cmp <- rbind(gci.cmp, nogci.cmp)
+ggplot(cmp, aes(type, latency)) +
+    geom_boxplot() +
+    facet_grid(. ~ state +  mem) +
+    scale_y_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+    ylab("Latency(ms)") +
+    theme(axis.title.x=element_blank())
+
+ggplot(cmp, aes(latency, linetype=type)) +
+  stat_ecdf() +
+  facet_grid(. ~ state +  mem) +
+  xlab("Latency(ms)") +
+  ylab("ECDF at Tail") +
+  scale_x_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+  coord_cartesian(ylim = c(0.99, 1)) +
+  theme(legend.position="top")
+```
+
+**Latency Improvement (%)**
+
+```{r}
+((t1-t1.gci)/t1)*100
+```
+
+**Latency Stddev Improvement (%)**
+
+```{r}
+sd.improvement.perc <- function(df1, df2) {
+  return(((sd(df1)-sd(df2))/sd(df1))*100)
+}
+sd.imp.table <- as.table(matrix(c(
+  sd.improvement.perc(nogci.low.nostate$succ$request_time, gci.low.nostate$succ$request_time),
+  sd.improvement.perc(nogci.high.nostate$succ$request_time, gci.high.nostate$succ$request_time),
+  sd.improvement.perc(nogci.low.state$succ$request_time, gci.low.nostate$succ$request_time),
+  sd.improvement.perc(nogci.high.state$succ$request_time, gci.high.state$succ$request_time)
+), ncol=1, byrow=T))
+  
+colnames(sd.imp.table) <- c("Latency Stdev Improvement (%)")
+rownames(sd.imp.table) <- c(
+  "Stateless & Low Heap Pressure",
+ "Stateless & High Heap Pressure",
+ "Statefull & Low Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+sd.imp.table
+```
+
+**Throughput Drop (%)**
+
+```{r}
+tp <- function(df){
+  return(NROW(df)/(df$timestamp[NROW(df)]-df$timestamp[1]))
+}
+tp.improvement.perc <- function(df1, df2) {
+  return(((tp(df1)-tp(df2))/tp(df1))*100)
+}
+
+tp.imp.table <- as.table(matrix(c(
+  tp.improvement.perc(nogci.low.nostate$succ, gci.low.nostate$succ),
+  tp.improvement.perc(nogci.high.nostate$succ, gci.high.nostate$succ),
+  tp.improvement.perc(nogci.low.state$succ, gci.low.state$succ),
+  tp.improvement.perc(nogci.high.state$succ, gci.high.state$succ)
+), ncol=1, byrow=T))
+  
+colnames(tp.imp.table) <- c("Throughput Drop (%)")
+rownames(tp.imp.table) <- c(
+  "Stateless & Low Heap Pressure",
+ "Stateless & High Heap Pressure",
+ "Statefull & Low Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+tp.imp.table
+```
+
+<!-- ```{r} -->
+<!-- b <- boxcox(latency~as.factor(state)*as.factor(mem),data=cmp %>% filter(type=="ON"),lambda = seq(-10,10,0.1) ) -->
+<!-- lambda <- b$x # lambda values -->
+
+<!-- lik <- b$y # log likelihood values for SSE -->
+
+<!-- bc <- cbind(lambda, lik) # combine lambda and lik -->
+
+<!-- sorted_bc <- bc[order(-lik),] # values are sorted to identify the lambda value for the maximum log likelihood for obtaining minimum SSE -->
+
+<!-- head(sorted_bc, n = 10) -->
+
+<!-- f1 <- lm(latency^(-1.1) ~ as.factor(state)*as.factor(mem),data=cmp %>% filter(type=="ON")) -->
+<!-- plot(f1$fitted.values,  rstandard(f1)) -->
+<!-- plot(f1, 2) -->
+
+<!-- hist(f1$residuals) -->
+
+<!-- qqPlot(rstandard(f1)) -->
+
+<!-- kurtosis(f1$residuals)  -->
+<!-- skewness(f1$residuals)  -->
+
+<!-- hist(gci.high.nostate$succ$request_time^(-1.1)) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- aov.cmp = aov(latency~as.factor(state)*as.factor(mem),data=cmp %>% filter(type=="ON")) -->
+<!-- summary(aov.cmp) -->
+
+<!-- cmp %>% filter(type=="ON" & state=="Stateless") -->
+
+<!-- model = lm(latency~as.factor(state)+as.factor(mem),data=cmp %>% filter(type=="OFF")) -->
+<!-- summary(model) -->
+
+<!-- model = lm(latency~as.factor(state)+as.factor(mem),data=cmp %>% filter(type=="ON")) -->
+<!-- summary(model) -->
+<!-- Anova(model,  type = "II") -->
+
+<!-- aov.cmp = aov(latency~as.factor(state)*as.factor(mem),data=cmp %>% filter(type=="OFF")) -->
+<!-- summary(aov.cmp) -->
+<!-- ``` -->
+
+<!-- ### Evaluating effect of factors -->
+
+
+<!-- **ANOVA** -->
+
+<!-- Tl;DR; We can not reliably use ANOVA to evaluate significance of the factors. -->
+
+<!-- ```{r} -->
+<!-- aov.cmp = aov(latency~type*state*mem,data=cmp) -->
+<!-- plot(aov.cmp, 1) -->
+<!-- leveneTest(latency~type*state*mem,data=cmp) -->
+<!-- ``` -->
+
+<!-- From the chart and tests above we can see that either values do not follow the fit line and the p-value less than the significance level of 0.05. This means that there is evidence to suggest that the variance across groups is statistically significantly different. Therefore, we can not assume the homogeneity of variances in the different treatment groups, which is a requirement for running ANOVA. -->
+
+<!-- ```{r} -->
+<!-- plot(aov.cmp, 2) -->
+<!-- aov_residuals <- residuals(object = aov.cmp) -->
+<!-- shapiro.test(x = sample(aov_residuals, 5000) ) -->
+<!-- ``` -->
+
+<!-- The data is also non-normal, as suggested by the Normal-QQ plot and supported by the -->
+<!-- Shapiro-Wilk test on the ANOVA residuals (W=0.2216, p<2e-16). -->
+
+
+
+
+
+
+
+
+<!-- ```{r} -->
+<!-- al1.exp.gci.warm <- accesslog("1i", "gci_T50_M65536_W0", 1, WARMUP_SECS) -->
+<!-- #al1.exp.gci.warm <- accesslog("1i", "gci_T50_M262144_W256", 1, WARMUP_SECS, DURATION_SECS) -->
+<!-- al1.exp.gci <- filter(al1.exp.gci.warm, status == 200) -->
+
+<!-- print(paste("Number of succeeded requests (GCI ON): ", NROW(al1.exp.gci) , "(", (NROW(al1.exp.gci)/NROW(al1.exp.gci.warm))*100,"%)")) -->
+<!-- print(paste("IQR (GCI ON): ", IQR(al1.exp.gci$request_time))) -->
+<!-- print(paste("STDDEV (GCI ON): ",  sd((al1.exp.gci$request_time)))) -->
+<!-- print(paste("MAX THROUGHPUT (GCI ON): ", NROW(al1.exp.gci)/(al1.exp.gci$timestamp[NROW(al1.exp.gci)]-al1.exp.gci$timestamp[1]))) -->
+<!-- summary(al1.exp.gci$request_time) -->
+<!-- quantile (al1.exp.gci$request_time, c(0.9,0.99,0.999,0.9999,0.99999)) -->
+
+<!-- failed.requests.gci <- filter(al1.exp.gci.warm, status == 503) -->
+<!-- print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al1.exp.gci.warm))*100, "% )")) -->
+<!-- if (NROW(failed.requests.gci) > 0) { -->
+<!--   summary(failed.requests.gci$request_time) -->
+<!--   hist(failed.requests.gci$request_time) -->
+<!-- } -->
+
+<!-- hist(al1.exp.gci$request_time) -->
+
+<!-- ggplot() + -->
+<!--   geom_point(data = al1.exp.gci, aes(x = timestamp, y = request_time))+ -->
+<!--   scale_x_continuous(breaks=seq(0,max(al1.exp.gci$timestamp),20)) + -->
+<!--   ylab("Latência (ms)") + -->
+<!--   xlab("Andamento do experimento (s)") -->
+
+<!-- ggplot() + -->
+<!--   geom_line(data = q.plot.data(al1.exp.gci), aes(x = ts, y = value, color = func))+ -->
+<!--   scale_x_continuous(breaks=seq(0,max(al1.exp.gci$timestamp),5)) + -->
+<!--   ylab("Latência (ms)") + -->
+<!--   xlab("Andamento do experimento (s)") -->
+
+<!-- cpu <- read.csv("1i/cpu_gci_T50_M65536_W0_0_1.csv") -->
+<!-- ggplot() + -->
+<!--   geom_point(data = cpu, aes(x = ts, y = load/2))+ -->
+<!--   ylab("Carga CPU (%)") + -->
+<!--   xlab("Andamento do experimento (s)") -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- #al1.exp.nogci.warm <- accesslog("1i", "nogci_T100_M65536_W1024", 1 , WARMUP_SECS) -->
+<!-- al1.exp.nogci.warm <- accesslog("1i", "nogci_T50_M262144_W256", 1 , WARMUP_SECS, DURATION_SECS) -->
+<!-- al1.exp.nogci <- filter(al1.exp.nogci.warm, status == 200) -->
+<!-- print(paste("Number of succeeded requests (GCI OFF): ", NROW(al1.exp.nogci))) -->
+<!-- print(paste("IQR (GCI OFF): ", IQR(al1.exp.nogci$request_time))) -->
+<!-- print(paste("STDDEV (GCI OFF): ",  sd((al1.exp.nogci$request_time)))) -->
+<!-- print(paste("MAX THROUGHPUT (GCI OFF): ", NROW(al1.exp.nogci)/(al1.exp.nogci$timestamp[NROW(al1.exp.nogci)]-al1.exp.nogci$timestamp[1]))) -->
+<!-- print(paste("NUM 99.99 (GCI OFF): ",  NROW(al1.exp.nogci)*0.001)) -->
+<!-- print(paste("NUM 99.999 (GCI OFF): ",  NROW(al1.exp.nogci)*0.0001)) -->
+<!-- summary(al1.exp.nogci$request_time) -->
+<!-- quantile (al1.exp.nogci$request_time, c(0.9,0.99,0.999,0.9999,0.99999)) -->
+
+<!-- hist(al1.exp.nogci$request_time) -->
+
+<!-- failed.requests.gci <- filter(al1.exp.nogci.warm, status == 503) -->
+<!-- print(paste("Number of failed requests (GCI ON): ", NROW(failed.requests.gci), "(", (NROW(failed.requests.gci)/NROW(al1.exp.nogci.warm))*100, "% )")) -->
+<!-- if (NROW(failed.requests.gci) > 0) { -->
+<!--   summary(failed.requests.nogci$request_time) -->
+<!--   hist(failed.requests.nogci$request_time) -->
+<!-- } -->
+
+<!-- ggplot() + -->
+<!--   geom_point(data = al1.exp.nogci, aes(x = timestamp, y = request_time))+ -->
+<!--   scale_x_continuous(breaks=seq(0, max(al1.exp.nogci$timestamp),5)) + -->
+<!--   ylab("Latência (ms)") + -->
+<!--   xlab("Andamento do experimento (s)") -->
+
+<!-- ggplot() + -->
+<!--   geom_line(data = q.plot.data(al1.exp.nogci), aes(x = ts, y = value, color = func))+ -->
+<!--   ylab("Latência (ms)") + -->
+<!--   xlab("Andamento do experimento (s)") -->
+
+<!-- cpu <- read.csv("1i/cpu_nogci_T50_M262144_W0_0_1.csv") -->
+<!-- ggplot() + -->
+<!--   geom_point(data = cpu, aes(x = ts, y = load/2))+ -->
+<!--   ylab("Carga CPU (%)") + -->
+<!--   xlab("Andamento do experimento (s)") -->
+<!-- ``` -->
+
+<!-- ```{r, fig.asp=0.5, fig.align="center"} -->
+<!-- #a1 <- al1.exp.gci %>% filter(request_time >= quantile(al1.exp.gci$request_time, 0.99)) -->
+<!-- #a2 <- al1.exp.nogci %>% filter(request_time >= quantile(al1.exp.nogci$request_time, 0.99)) -->
+<!-- al1.cmp <- rbind( -->
+<!--   data.frame("latency"=al1.exp.gci$request_time, type="ON"), -->
+<!--   data.frame("latency"=al1.exp.nogci$request_time, type="OFF")) -->
+
+
+<!-- grid.arrange( -->
+<!--   ggplot(al1.cmp, aes(type, latency)) + -->
+<!--     geom_boxplot() + -->
+<!--     ggtitle("Summary") + -->
+<!--     scale_y_continuous(breaks=seq(0,max(al1.cmp$latency), 20)) + -->
+<!--     ylab("Latency(ms)") + -->
+<!--     xlab("GCI"), -->
+<!--    ggplot(al1.cmp, aes(latency, linetype=type)) + -->
+<!--     stat_ecdf() + -->
+<!--     ggtitle("ECDF") + -->
+<!--     xlab("Latency(ms)") + -->
+<!--     ylab("ECDF") + -->
+<!--     scale_x_continuous(breaks=seq(0,max(al1.cmp$latency), 20)) + -->
+<!--     coord_cartesian(ylim = c(0.99, 1)) + -->
+<!--     theme(legend.position="top"), -->
+<!--   ncol=2) -->
+<!-- ``` -->
+<!-- ```{r, fig.asp=0.5, fig.align="center"} -->
+<!-- #If you don't trim the library, your computer could die trying to resample. -->
+<!-- al1.cmp <- rbind( -->
+<!--   data.frame("latency"=sample(al1.exp.gci$request_time, SAMPLE_SIZE), type="ON"), -->
+<!--   data.frame("latency"=sample(al1.exp.nogci$request_time, SAMPLE_SIZE), type="OFF")) -->
+
+
+<!-- grid.arrange( -->
+<!--   ggplot(al1.cmp, aes(type, latency)) + -->
+<!--     stat_summary(fun.y=median, geom="point", shape=23, size=2) + -->
+<!--     stat_summary(fun.data=ci.median, geom="errorbar", width=0.05) + -->
+<!--     ggtitle("Median") + -->
+<!--     ylab("Latency(ms)") + -->
+<!--     xlab("GCI"), -->
+<!--   ggplot(al1.cmp, aes(type, latency)) + -->
+<!--     stat_summary(fun.y=p99, geom="point", shape=23, size=2) + -->
+<!--     stat_summary(fun.data=ci.p99, geom="errorbar", width=0.05) + -->
+<!--     ggtitle("99 Percentile") + -->
+<!--     ylab("Latency(ms)") + -->
+<!--     xlab("GCI"), -->
+<!--   ggplot(al1.cmp, aes(type, latency)) + -->
+<!--     stat_summary(fun.y=p999, geom="point", shape=23, size=2) + -->
+<!--     stat_summary(fun.data=ci.p999, geom="errorbar", width=0.05) + -->
+<!--     ggtitle("99.9 Percentile") + -->
+<!--     ylab("Latency(ms)") + -->
+<!--     xlab("GCI"), -->
+<!--   ggplot(al1.cmp, aes(type, latency)) + -->
+<!--     stat_summary(fun.y=p9999, geom="point", shape=23, size=2) + -->
+<!--     stat_summary(fun.data=ci.p9999, geom="errorbar", width=0.05) + -->
+<!--     ggtitle("99.99 Percentile") + -->
+<!--     ylab("Latency(ms)") + -->
+<!--     xlab("GCI"), -->
+<!--   ggplot(al1.cmp, aes(type, latency)) + -->
+<!--     stat_summary(fun.y=p99999, geom="point", shape=23, size=2) + -->
+<!--     stat_summary(fun.data=ci.p99999, geom="errorbar", width=0.05) + -->
+<!--     ggtitle("99.999 Percentile") + -->
+<!--     ylab("Latency(ms)") + -->
+<!--     xlab("Type"), -->
+<!--   ncol=3, -->
+<!--   nrow=2) -->
+<!-- ``` -->
