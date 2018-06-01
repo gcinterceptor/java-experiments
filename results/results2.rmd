@@ -1,0 +1,256 @@
+---
+title: "GCI-Java reaches the Cloud"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "May, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=F)
+
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+require(reshape2)
+
+source("functions.R")
+
+REP <- 2
+SAMPLE_SIZE <- 1000
+RESAMPLES <- 1000
+WARMUP_SECS <- 180
+DURATION_SECS <- 0
+```
+
+# 2-Instances
+
+## Setup
+
+* N service instances (VM with 2 cores and 1GB RAM each). JVM heap set to 512MB.
+* 1 machine running client
+* 1 machine running loadbalancer and proxies (for experiments with GCI on)
+* Simple request processing: allocate memory + do some computation (pretty close to what we did at SBRC). Could keep state or not.
+
+## Design
+
+*  $2^{3}$ factorial design
+
+* Independent variables:
+     * State Kept (yes or no): emulated by an simple array allocated at service startup and updated by every request
+     * GCI (on or off)
+     * Number of instances (N): We are not going to vary this variable too much with experiments. It is more needed to show that our design is solid and to validate the simulator. This will be a very important parameter for our simulated results.
+
+* Dependent variables:
+     * Latency: wall clock time measured from the loadbalancer. Only for requests which have been successfully attended.
+     
+* Constants:
+     * Memory allocated per request: 256KB (GCI is mostly targetted to system under memory pressure)
+     * Load (Constant and equals to N\*40 QPS) The system was less than 50% utiilzation. The goal is to minimize the effect of context switching and environment sources of noise (we would like to focus on the impact of the GC on the request time)
+          * It is possible that we add another set of experiments just to analyse the effect of the load
+          in the throughput drop (maybe add it in future work section)
+
+## Results
+
+```{r}
+gci.1i.nostate <- accesslog("1i", "gci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.1i.state <- accesslog("1i", "gci_T40_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+gci.2i.nostate <- accesslog("2i", "gci_T80_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.2i.state <- accesslog("2i", "gci_T80_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+
+gci.cmp <- rbind(
+  data.frame("latency"=gci.1i.nostate$succ$request_time, type="ON", state="Stateless", n="1 Instance"),
+  data.frame("latency"=gci.1i.state$succ$request_time, type="ON", state="Stateful", n="1 Instance"),
+  data.frame("latency"=gci.2i.state$succ$request_time, type="ON", state="Stateful", n="2 Instances"),
+  data.frame("latency"=gci.2i.nostate$succ$request_time, type="ON", state="Stateless", n="2 Instances")
+)
+
+nogci.2i.nostate <- accesslog("2i", "nogci_T80_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.2i.state <- accesslog("2i", "nogci_T80_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+nogci.1i.nostate <- accesslog("1i", "nogci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.1i.state <- accesslog("1i", "nogci_T40_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+
+nogci.cmp <- rbind(
+  data.frame("latency"=nogci.1i.nostate$succ$request_time, type="OFF", state="Stateless", n="1 Instance"),
+  data.frame("latency"=nogci.1i.state$succ$request_time, type="OFF", state="Stateful", n="1 Instance"),
+  data.frame("latency"=nogci.2i.state$succ$request_time, type="OFF", state="Stateful", n="2 Instances"),
+  data.frame("latency"=nogci.2i.nostate$succ$request_time, type="OFF", state="Stateless", n="2 Instances")
+)
+cmp <- rbind(gci.cmp, nogci.cmp)
+```
+
+### Latency Tail
+
+Bellow we show the comparison of tail of ECDFs(notice the y-axix start at 99.0). I
+believe this chart summarizes our results.
+
+```{r}
+ggplot(cmp, aes(latency, linetype=type)) +
+  stat_ecdf() +
+  facet_grid(. ~ state + n) +
+  xlab("Latency(ms)") +
+  ylab("ECDF at Tail") +
+  scale_x_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+  coord_cartesian(ylim = c(0.99, 1)) +
+  theme(legend.position="top")
+```
+
+Bellow we have more numbers, which I don't intend to put in the paper as such. It is just for our ease
+our evaluation.
+
+#### Latency improvement
+
+How much does the tail latency improve by switching GCI ON?
+
+**1 Instance (%)**
+```{r}
+t.nogci.1i <- tail.table(
+  nogci.1i.nostate$succ$request_time,
+  nogci.1i.state$succ$request_time)
+t.gci.1i <- tail.table(
+  gci.1i.nostate$succ$request_time,
+  gci.1i.state$succ$request_time)
+((t.nogci.1i-t.gci.1i)/t.nogci.1i)*100
+```
+**2 Instances (%)**
+```{r}
+t.nogci.2i <- tail.table(
+  nogci.2i.nostate$succ$request_time,
+  nogci.2i.state$succ$request_time)
+t.gci.2i <- tail.table(
+  gci.2i.nostate$succ$request_time,
+  gci.2i.state$succ$request_time)
+((t.nogci.2i-t.gci.2i)/t.nogci.2i)*100
+```
+
+#### Latency Stddev Improvement (%)
+
+How much does the tail latency variability decrease by switching GCI ON?
+
+**1 Instance**
+
+```{r}
+sd.imp.1i.table <- as.table(matrix(c(
+  sd.improvement.perc(nogci.1i.nostate$succ$request_time, gci.1i.nostate$succ$request_time),
+  sd.improvement.perc(nogci.1i.state$succ$request_time, gci.1i.state$succ$request_time)
+), ncol=1, byrow=T))
+  
+colnames(sd.imp.1i.table) <- c("Latency Stdev Improvement (%)")
+rownames(sd.imp.1i.table) <- c(
+ "Stateless & High Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+sd.imp.1i.table
+```
+
+
+**2 Instances**
+
+```{r}
+sd.imp.2i.table <- as.table(matrix(c(
+  sd.improvement.perc(nogci.2i.nostate$succ$request_time, gci.2i.nostate$succ$request_time),
+  sd.improvement.perc(nogci.2i.state$succ$request_time, gci.2i.state$succ$request_time)
+), ncol=1, byrow=T))
+  
+colnames(sd.imp.2i.table) <- c("Latency Stdev Improvement (%)")
+rownames(sd.imp.2i.table) <- c(
+ "Stateless & High Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+sd.imp.2i.table
+```
+
+
+### Throughput Drop
+
+How much does the throughput drop by switching GCI on?
+
+**1 Instance (%)**
+
+```{r}
+tp.imp.1i.table <- as.table(matrix(c(
+  tp.improvement.perc(nogci.1i.nostate$succ, gci.1i.nostate$succ),
+  tp.improvement.perc(nogci.1i.state$succ, gci.1i.state$succ)
+), ncol=1, byrow=T))
+  
+colnames(tp.imp.1i.table) <- c("Throughput Drop (%)")
+rownames(tp.imp.1i.table) <- c(
+ "Stateless & High Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+tp.imp.1i.table
+```
+
+**2 Instances (%)**
+
+```{r}
+tp.imp.2i.table <- as.table(matrix(c(
+  tp.improvement.perc(nogci.2i.nostate$succ, gci.2i.nostate$succ),
+  tp.improvement.perc(nogci.2i.state$succ, gci.2i.state$succ)
+), ncol=1, byrow=T))
+  
+colnames(tp.imp.2i.table) <- c("Throughput Drop (%)")
+rownames(tp.imp.2i.table) <- c(
+ "Stateless & High Heap Pressure",
+ "Statefull & High Heap Pressure"
+)
+tp.imp.2i.table
+```
+
+### Latency Boxplots
+
+Important to evaluate if the the application/setup is following a linear
+scalability curve. In other words, the latency median should not change much
+when we move from one to two service instances and double the load.
+
+```{r}
+ggplot(cmp, aes(type, latency)) +
+    geom_boxplot() +
+    facet_grid(. ~ state + n) +
+    scale_y_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+    ylab("Latency(ms)") +
+    theme(axis.title.x=element_blank())
+```
+
+
+## Deep dive: GCI Off (Profs, no need to read this)
+
+```{r}
+ggplot(nogci.cmp, aes(state, latency)) +
+  geom_boxplot() +
+  facet_wrap(~ n) +
+  scale_y_continuous(breaks=seq(0,max(nogci.cmp$latency), 10)) +
+  ylab("Latency(ms)") +
+  theme(axis.title.x=element_blank())
+```
+
+**1 Instance**
+```{r}
+t.nogci.1i
+```
+**2 Instances**
+```{r}
+t.nogci.2i
+```
+
+## Deep Dive: GCI On (Profs, no need to read this)
+
+```{r}
+ggplot(gci.cmp, aes(state, latency)) +
+  geom_boxplot() +
+  facet_wrap(~ n) +
+  scale_y_continuous(breaks=seq(0,max(gci.cmp$latency), 10)) +
+  ylab("Latency(ms)") +
+  theme(axis.title.x=element_blank())
+```
+
+**1 Instance**
+```{r}
+t.gci.1i
+```
+**2 Instances**
+```{r}
+t.gci.2i
+```
