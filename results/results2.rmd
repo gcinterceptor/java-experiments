@@ -21,7 +21,7 @@ source("functions.R")
 REP <- 2
 SAMPLE_SIZE <- 1000
 RESAMPLES <- 1000
-WARMUP_SECS <- 180
+WARMUP_SECS <- 240
 DURATION_SECS <- 0
 ```
 
@@ -55,28 +55,36 @@ DURATION_SECS <- 0
 ## Results
 
 ```{r}
-gci.1i.nostate <- accesslog("1i", "gci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
-gci.1i.state <- accesslog("1i", "gci_T40_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
-gci.2i.nostate <- accesslog("2i", "gci_T80_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
-gci.2i.state <- accesslog("2i", "gci_T80_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+gci.1i.nostate <- accesslog("1i", "gci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.1i.state <- accesslog("1i", "gci_T30_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+gci.2i.nostate <- accesslog("2i", "gci_T60_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.2i.state <- accesslog("2i", "gci_T60_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+gci.4i.nostate <- accesslog("4i", "gci_T120_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+gci.4i.state <- accesslog("4i", "gci_T120_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
 
 gci.cmp <- rbind(
   data.frame("latency"=gci.1i.nostate$succ$request_time, type="ON", state="Stateless", n="1 Instance"),
   data.frame("latency"=gci.1i.state$succ$request_time, type="ON", state="Stateful", n="1 Instance"),
+  data.frame("latency"=gci.2i.nostate$succ$request_time, type="ON", state="Stateless", n="2 Instances"),
   data.frame("latency"=gci.2i.state$succ$request_time, type="ON", state="Stateful", n="2 Instances"),
-  data.frame("latency"=gci.2i.nostate$succ$request_time, type="ON", state="Stateless", n="2 Instances")
+  data.frame("latency"=gci.4i.state$succ$request_time, type="ON", state="Stateful", n="4 Instances"),
+  data.frame("latency"=gci.4i.nostate$succ$request_time, type="ON", state="Stateless", n="4 Instances")
 )
 
-nogci.2i.nostate <- accesslog("2i", "nogci_T80_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
-nogci.2i.state <- accesslog("2i", "nogci_T80_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
-nogci.1i.nostate <- accesslog("1i", "nogci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
-nogci.1i.state <- accesslog("1i", "nogci_T40_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
+nogci.1i.nostate <- accesslog("1i", "nogci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.1i.state <- accesslog("1i", "nogci_T30_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+nogci.2i.nostate <- accesslog("2i", "nogci_T60_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.2i.state <- accesslog("2i", "nogci_T60_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+nogci.4i.nostate <- accesslog("4i", "nogci_T120_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+nogci.4i.state <- accesslog("4i", "nogci_T120_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
 
 nogci.cmp <- rbind(
   data.frame("latency"=nogci.1i.nostate$succ$request_time, type="OFF", state="Stateless", n="1 Instance"),
   data.frame("latency"=nogci.1i.state$succ$request_time, type="OFF", state="Stateful", n="1 Instance"),
+  data.frame("latency"=nogci.2i.nostate$succ$request_time, type="OFF", state="Stateless", n="2 Instances"),
   data.frame("latency"=nogci.2i.state$succ$request_time, type="OFF", state="Stateful", n="2 Instances"),
-  data.frame("latency"=nogci.2i.nostate$succ$request_time, type="OFF", state="Stateless", n="2 Instances")
+  data.frame("latency"=nogci.4i.nostate$succ$request_time, type="OFF", state="Stateless", n="4 Instances"),
+  data.frame("latency"=nogci.4i.state$succ$request_time, type="OFF", state="Stateful", n="4 Instances")
 )
 cmp <- rbind(gci.cmp, nogci.cmp)
 ```
@@ -92,7 +100,7 @@ ggplot(cmp, aes(latency, linetype=type)) +
   facet_grid(. ~ state + n) +
   xlab("Latency(ms)") +
   ylab("ECDF at Tail") +
-  scale_x_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+  scale_x_continuous(breaks=seq(0,max(cmp$latency), 30)) +
   coord_cartesian(ylim = c(0.99, 1)) +
   theme(legend.position="top")
 ```
@@ -125,78 +133,55 @@ t.gci.2i <- tail.table(
 ((t.nogci.2i-t.gci.2i)/t.nogci.2i)*100
 ```
 
+**4 Instances (%)**
+```{r}
+t.nogci.4i <- tail.table(
+  nogci.4i.nostate$succ$request_time,
+  nogci.4i.state$succ$request_time)
+t.gci.4i <- tail.table(
+  gci.4i.nostate$succ$request_time,
+  gci.4i.state$succ$request_time)
+((t.nogci.4i-t.gci.4i)/t.nogci.4i)*100
+```
+
 #### Latency Stddev Improvement (%)
 
 How much does the tail latency variability decrease by switching GCI ON?
 
-**1 Instance**
-
 ```{r}
-sd.imp.1i.table <- as.table(matrix(c(
+sd.imp.table <- as.table(matrix(c(
   sd.improvement.perc(nogci.1i.nostate$succ$request_time, gci.1i.nostate$succ$request_time),
-  sd.improvement.perc(nogci.1i.state$succ$request_time, gci.1i.state$succ$request_time)
-), ncol=1, byrow=T))
-  
-colnames(sd.imp.1i.table) <- c("Latency Stdev Improvement (%)")
-rownames(sd.imp.1i.table) <- c(
- "Stateless & High Heap Pressure",
- "Statefull & High Heap Pressure"
-)
-sd.imp.1i.table
-```
-
-
-**2 Instances**
-
-```{r}
-sd.imp.2i.table <- as.table(matrix(c(
   sd.improvement.perc(nogci.2i.nostate$succ$request_time, gci.2i.nostate$succ$request_time),
-  sd.improvement.perc(nogci.2i.state$succ$request_time, gci.2i.state$succ$request_time)
-), ncol=1, byrow=T))
+  sd.improvement.perc(nogci.4i.nostate$succ$request_time, gci.4i.nostate$succ$request_time),
+  sd.improvement.perc(nogci.1i.state$succ$request_time, gci.1i.state$succ$request_time),
+  sd.improvement.perc(nogci.2i.state$succ$request_time, gci.2i.state$succ$request_time),
+  sd.improvement.perc(nogci.4i.state$succ$request_time, gci.4i.state$succ$request_time)
+), ncol=3, byrow=T))
   
-colnames(sd.imp.2i.table) <- c("Latency Stdev Improvement (%)")
-rownames(sd.imp.2i.table) <- c(
- "Stateless & High Heap Pressure",
- "Statefull & High Heap Pressure"
-)
-sd.imp.2i.table
+colnames(sd.imp.table) <- c("1 Instance", "2 Instances", "4 Instances")
+rownames(sd.imp.table) <- c("Stateless", "Statefull")
+sd.imp.table
 ```
 
 
-### Throughput Drop
+### Throughput Drop (%)
 
 How much does the throughput drop by switching GCI on?
 
-**1 Instance (%)**
-
 ```{r}
-tp.imp.1i.table <- as.table(matrix(c(
+tp.imp.table <- as.table(matrix(c(
   tp.improvement.perc(nogci.1i.nostate$succ, gci.1i.nostate$succ),
-  tp.improvement.perc(nogci.1i.state$succ, gci.1i.state$succ)
-), ncol=1, byrow=T))
-  
-colnames(tp.imp.1i.table) <- c("Throughput Drop (%)")
-rownames(tp.imp.1i.table) <- c(
- "Stateless & High Heap Pressure",
- "Statefull & High Heap Pressure"
-)
-tp.imp.1i.table
-```
-
-**2 Instances (%)**
-
-```{r}
-tp.imp.2i.table <- as.table(matrix(c(
   tp.improvement.perc(nogci.2i.nostate$succ, gci.2i.nostate$succ),
-  tp.improvement.perc(nogci.2i.state$succ, gci.2i.state$succ)
-), ncol=1, byrow=T))
+  tp.improvement.perc(nogci.4i.nostate$succ, gci.4i.nostate$succ),
+  tp.improvement.perc(nogci.1i.state$succ, gci.1i.state$succ),
+  tp.improvement.perc(nogci.2i.state$succ, gci.2i.state$succ),
+  tp.improvement.perc(nogci.4i.state$succ, gci.4i.state$succ)
+), ncol=3, byrow=T))
   
-colnames(tp.imp.2i.table) <- c("Throughput Drop (%)")
-rownames(tp.imp.2i.table) <- c(
- "Stateless & High Heap Pressure",
- "Statefull & High Heap Pressure"
+colnames(tp.imp.table) <- c("1 Instance", "2 Instances", "4 Instances")
+rownames(tp.imp.table) <- c("Stateless", "Statefull"
 )
-tp.imp.2i.table
+tp.imp.table
 ```
 
 ### Latency Boxplots
