@@ -18,7 +18,7 @@ require(reshape2)
 
 source("functions.R")
 
-REP <- 2
+REP <- 3
 SAMPLE_SIZE <- 1000
 RESAMPLES <- 1000
 WARMUP_SECS <- 240
@@ -29,7 +29,7 @@ DURATION_SECS <- 0
 
 ## Setup
 
-* N service instances (VM with 2 cores and 1GB RAM each). JVM heap set to 512MB.
+* N service instances (VM with 2 cores and 4GB RAM each). JVM heap set to 512MB (GCI deals with GC pressure, right? So, we need to trigger it).
 * 1 machine running client
 * 1 machine running loadbalancer and proxies (for experiments with GCI on)
 * Simple request processing: allocate memory + do some computation (pretty close to what we did at SBRC). Could keep state or not.
@@ -48,7 +48,7 @@ DURATION_SECS <- 0
      
 * Constants:
      * Memory allocated per request: 256KB (GCI is mostly targetted to system under memory pressure)
-     * Load (Constant and equals to N\*40 QPS) The system was less than 50% utiilzation. The goal is to minimize the effect of context switching and environment sources of noise (we would like to focus on the impact of the GC on the request time)
+     * Load (Constant and equals to N\*30 QPS) The system was less than 50% utiilzation. The goal is to minimize the effect of context switching and environment sources of noise (we would like to focus on the impact of the GC on the request time)
           * It is possible that we add another set of experiments just to analyse the effect of the load
           in the throughput drop (maybe add it in future work section)
 
@@ -67,8 +67,8 @@ gci.cmp <- rbind(
   data.frame("latency"=gci.1i.state$succ$request_time, type="ON", state="Stateful", n="1 Instance"),
   data.frame("latency"=gci.2i.nostate$succ$request_time, type="ON", state="Stateless", n="2 Instances"),
   data.frame("latency"=gci.2i.state$succ$request_time, type="ON", state="Stateful", n="2 Instances"),
-  data.frame("latency"=gci.4i.state$succ$request_time, type="ON", state="Stateful", n="4 Instances"),
-  data.frame("latency"=gci.4i.nostate$succ$request_time, type="ON", state="Stateless", n="4 Instances")
+  data.frame("latency"=gci.4i.nostate$succ$request_time, type="ON", state="Stateless", n="4 Instances"),
+  data.frame("latency"=gci.4i.state$succ$request_time, type="ON", state="Stateful", n="4 Instances")
 )
 
 nogci.1i.nostate <- accesslog("1i", "nogci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
@@ -97,7 +97,7 @@ believe this chart summarizes our results.
 ```{r}
 ggplot(cmp, aes(latency, linetype=type)) +
   stat_ecdf() +
-  facet_grid(. ~ state + n) +
+  facet_grid(state ~ n) +
   xlab("Latency(ms)") +
   ylab("ECDF at Tail") +
   scale_x_continuous(breaks=seq(0,max(cmp$latency), 30)) +
@@ -193,7 +193,7 @@ when we move from one to two service instances and double the load.
 ```{r}
 ggplot(cmp, aes(type, latency)) +
     geom_boxplot() +
-    facet_grid(. ~ state + n) +
+    facet_grid(state ~ n) +
     scale_y_continuous(breaks=seq(0,max(cmp$latency), 20)) +
     ylab("Latency(ms)") +
     theme(axis.title.x=element_blank())
@@ -220,6 +220,11 @@ t.nogci.1i
 t.nogci.2i
 ```
 
+**4 Instances**
+```{r}
+t.nogci.4i
+```
+
 ## Deep Dive: GCI On (Profs, no need to read this)
 
 ```{r}
@@ -238,4 +243,8 @@ t.gci.1i
 **2 Instances**
 ```{r}
 t.gci.2i
+```
+**4 Instances**
+```{r}
+t.gci.4i
 ```
