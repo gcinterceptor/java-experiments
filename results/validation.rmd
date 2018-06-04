@@ -2,7 +2,7 @@
 title: "GCI Simulator Validation"
 author: "Daniel Fireman (danielfireman@gmail.com)"
 date: "March, 2018"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -38,22 +38,25 @@ is the latency (continuous variable, positive integer).
 * $H_{0}$: The simulated latency is different from experimental latency.
 
 ```{r}
-al1.exp.gci <- accesslog("1i", "gci_T80_Java9_WithFullGC", 4, WARMUP_SECS)
-al1.exp.nogci <- accesslog("1i", "nogci_T80_Java9_WithFullGC", 4, WARMUP_SECS)
+al1.exp.gci <- accesslog("2i", "gci_T80", 1, WARMUP_SECS)
+al1.exp.nogci <- accesslog("2i", "nogci_T80", 1, WARMUP_SECS)
 
 al1.sim.gci <- rbind(
-  read.csv("1i/sim_lb_gci_1.csv"),
-  read.csv("1i/sim_lb_gci_2.csv"),
-  read.csv("1i/sim_lb_gci_3.csv"),
-  read.csv("1i/sim_lb_gci_4.csv"))
+  read.csv("2i/sim/sim_lb_gci_1.csv"),
+  read.csv("2i/sim/sim_lb_gci_2.csv"),
+  read.csv("2i/sim/sim_lb_gci_3.csv"),
+  read.csv("2i/sim/sim_lb_gci_4.csv"))
 al1.sim.gci$latency <- as.integer(al1.sim.gci$latency*1000)
 
+
 al1.sim.nogci <- rbind(
-  read.csv("1i/sim_lb_nogci_1.csv"),
-  read.csv("1i/sim_lb_nogci_2.csv"),
-  read.csv("1i/sim_lb_nogci_3.csv"),
-  read.csv("1i/sim_lb_nogci_4.csv"))
+  read.csv("2i/sim/sim_lb_nogci_1.csv"),
+  read.csv("2i/sim/sim_lb_nogci_2.csv"),
+  read.csv("2i/sim/sim_lb_nogci_3.csv"),
+  read.csv("2i/sim/sim_lb_nogci_4.csv"))
 al1.sim.nogci$latency <- as.integer(al1.sim.nogci$latency*1000)
+
+
 
 # Only consider latency of successfull requests.
 al1.sim.gci <- filter(al1.sim.gci, done == "True")
@@ -187,7 +190,7 @@ grid.arrange(
 Even though the ECDF looked very similar and the confidence intervals seem to intersect, we would like to have an statistical test to check how close the simulator latency is to the experiment latency, which can can be measured by Goodness-of-Fit (GoF) tests. e used
 the two-sample Kolmogorov-Smirnov (KS) test, which checks if two that the samples are drawn from the same distribution. 
 
-The KS test has an issue of being sensitive for large samples. As the data samples used are all large ($35,000+$ datapoints), we applied an approach used in other modelling studies to mitigate this issue [this](http://ieeexplore.ieee.org/document/5703090/), [this](http://ieeexplore.ieee.org/document/5367061/) and [Marcus' paper](http://ieeexplore.ieee.org/document/6319153/?reload=true) (more at Marcus' paper, including references to goodness-of-fit tests). We selected $500$ random samples of size $50$ for each fitted data, obtain the p-values for the KS test applied to each sample and then calculate the average p-value.
+The KS test has an issue of being sensitive for large samples. As the data samples used are all large ($35,000+$ datapoints), we applied an approach used in other modelling studies to mitigate this issue [this](http://ieeexplore.ieee.org/document/5703090/), [this](http://ieeexplore.ieee.org/document/5367061/) and [Marcus' paper](http://ieeexplore.ieee.org/document/6319153/?reload=true) (more at Marcus' paper, including references to goodness-of-fit tests). We selected $1000$ random samples of size $30$ for each fitted data, obtain the p-values for the KS test applied to each sample and then calculate the average p-value.
 
 **Treatment**
 

@@ -15,30 +15,14 @@ require(stringr)
 require(cowplot)
 require(ggplot2)
 require(reshape2)
-require(car)
-library(moments)
-library(MASS)
 
 source("functions.R")
 
-REP <- 3
+REP <- 2
 SAMPLE_SIZE <- 1000
 RESAMPLES <- 1000
-WARMUP_SECS <- 240
-DURATION_SECS <- 300
-
-q.plot.data <- function(df) {
-  q <-  df %>% group_by(trunc(timestamp)) %>% summarize(
-    q50 = quantile(request_time, 0.5),
-    q90 = quantile(request_time, 0.9),
-    q99 = quantile(request_time, 0.99),
-    q999 = quantile(request_time, 0.999),
-    q9999 = quantile(request_time, 0.9999),
-    max = max(request_time))
-  q <- melt(q, id="trunc(timestamp)")
-  colnames(q) <- c("ts", "func", "value")
-  return(q)
-}
+WARMUP_SECS <- 120
+DURATION_SECS <- 0
 ```
 
 # 1-Instance
@@ -77,21 +61,17 @@ How does a simple service without GCI deal with changes in heap pressure and
 keeping state?
 
 ```{r read.nogci}
-nogci.low.nostate <- accesslog("1i", "nogci_T40_M65536_W0", REP, WARMUP_SECS, DURATION_SECS)
-nogci.low.state <- accesslog("1i", "nogci_T40_M65536_W1024", REP, WARMUP_SECS, DURATION_SECS)
 nogci.high.nostate <- accesslog("1i", "nogci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
 nogci.high.state <- accesslog("1i", "nogci_T40_M262144_W256",REP, WARMUP_SECS, DURATION_SECS)
 ```
 
 ```{r}
 nogci.cmp <- rbind(
-  data.frame("latency"=nogci.low.nostate$succ$request_time, type="OFF", state="Stateless", mem="Low HP"),
-  data.frame("latency"=nogci.low.state$succ$request_time, type="OFF", state="Stateful", mem="Low HP"),
   data.frame("latency"=nogci.high.state$succ$request_time, type="OFF", state="Stateful", mem="High HP"),
   data.frame("latency"=nogci.high.nostate$succ$request_time, type="OFF", state="Stateless", mem="High HP")
 )
 
-ggplot(nogci.cmp, aes(state, latency, color=mem)) +
+ggplot(nogci.cmp, aes(state, latency)) +
   geom_boxplot() +
   scale_y_continuous(breaks=seq(0,max(nogci.cmp$latency), 10)) +
   ylab("Latency(ms)") +
@@ -102,24 +82,7 @@ ggplot(nogci.cmp, aes(state, latency, color=mem)) +
 have an impact in the latency tail. Bellow we print the summary and tail percentiles.
 
 ```{r}
-q.nsll <- quantile(nogci.low.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-q.nshl <- quantile(nogci.high.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-q.sll <- quantile(nogci.low.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-q.shl <-  quantile(nogci.high.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-t1 <- as.table(matrix(
-  c(q.nsll[1], q.nsll[1], q.nsll[3], q.nsll[4],
-    q.nshl[1], q.nshl[2], q.nshl[3], q.nshl[4],
-    q.sll[1], q.sll[2], q.sll[3], q.sll[4],
-    q.shl[1], q.shl[2], q.shl[3], q.shl[4]
-  ), ncol=4, byrow=T))
-
-colnames(t1) <- c("99%", "99.9%", "99.99%", "99.999%")
-rownames(t1) <- c(
- "Stateless & Low Heap Pressure",
- "Stateless & High Heap Pressure",
- "Statefull & Low Heap Pressure",
- "Statefull & High Heap Pressure"
-)
+t1 <- tail.table(nogci.high.nostate$succ$request_time, nogci.high.state$succ$request_time)
 t1
 ```
 
@@ -129,21 +92,17 @@ Does GCI help on improving the situation described above. In other words, does t
 tail latency get less affected by the heap pressure and the state kept?
 
 ```{r read.gci.on}
-gci.low.nostate <- accesslog("1i", "gci_T40_M65536_W0", REP, WARMUP_SECS, DURATION_SECS)
-gci.low.state <- accesslog("1i", "gci_T40_M65536_W1024", REP, WARMUP_SECS, DURATION_SECS)
 gci.high.nostate <- accesslog("1i", "gci_T40_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
 gci.high.state <- accesslog("1i", "gci_T40_M262144_W256", REP, WARMUP_SECS, DURATION_SECS)
 ```
 
 ```{r}
 gci.cmp <- rbind(
-  data.frame("latency"=gci.low.nostate$succ$request_time, type="ON", state="Stateless", mem="Low HP"),
-  data.frame("latency"=gci.low.state$succ$request_time, type="ON", state="Stateful", mem="Low HP"),
   data.frame("latency"=gci.high.state$succ$request_time, type="ON", state="Stateful", mem="High HP"),
   data.frame("latency"=gci.high.nostate$succ$request_time, type="ON", state="Stateless", mem="High HP")
 )
 
-ggplot(gci.cmp, aes(state, latency, color=mem)) +
+ggplot(gci.cmp, aes(state, latency)) +
   geom_boxplot() +
   scale_y_continuous(breaks=seq(0,max(gci.cmp$latency), 10)) +
   ylab("Latency(ms)") +
@@ -154,25 +113,7 @@ ggplot(gci.cmp, aes(state, latency, color=mem)) +
 impact of memory pressure and state, shortening the latency tail.
 
 ```{r}
-q.nsll <- quantile(gci.low.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-q.nshl <- quantile(gci.high.nostate$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-q.sll <- quantile(gci.low.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-q.shl <-  quantile(gci.high.state$succ$request_time, c(0.99, 0.999, 0.9999, 0.99999))
-
-t1.gci <- as.table(matrix(
-  c(q.nsll[1], q.nsll[1], q.nsll[3], q.nsll[4],
-    q.nshl[1], q.nshl[2], q.nshl[3], q.nshl[4],
-    q.sll[1], q.sll[2], q.sll[3], q.sll[4],
-    q.shl[1], q.shl[2], q.shl[3], q.shl[4]
-  ), ncol=4, byrow=T))
-
-colnames(t1.gci) <- c("99%", "99.9%", "99.99%", "99.999")
-rownames(t1.gci) <- c(
- "Stateless & Low Heap Pressure",
- "Stateless & High Heap Pressure",
- "Statefull & Low Heap Pressure",
- "Statefull & High Heap Pressure"
-)
+t1.gci <- tail.table(gci.high.nostate$succ$request_time, gci.high.state$succ$request_time)
 t1.gci
 ```
 
@@ -184,14 +125,14 @@ t1.gci
 cmp <- rbind(gci.cmp, nogci.cmp)
 ggplot(cmp, aes(type, latency)) +
     geom_boxplot() +
-    facet_grid(. ~ state +  mem) +
+    facet_grid(. ~ state) +
     scale_y_continuous(breaks=seq(0,max(cmp$latency), 20)) +
     ylab("Latency(ms)") +
     theme(axis.title.x=element_blank())
 
 ggplot(cmp, aes(latency, linetype=type)) +
   stat_ecdf() +
-  facet_grid(. ~ state +  mem) +
+  facet_grid(. ~ state) +
   xlab("Latency(ms)") +
   ylab("ECDF at Tail") +
   scale_x_continuous(breaks=seq(0,max(cmp$latency), 20)) +
@@ -212,18 +153,14 @@ sd.improvement.perc <- function(df1, df2) {
   return(((sd(df1)-sd(df2))/sd(df1))*100)
 }
 sd.imp.table <- as.table(matrix(c(
-  sd.improvement.perc(nogci.low.nostate$succ$request_time, gci.low.nostate$succ$request_time),
   sd.improvement.perc(nogci.high.nostate$succ$request_time, gci.high.nostate$succ$request_time),
-  sd.improvement.perc(nogci.low.state$succ$request_time, gci.low.nostate$succ$request_time),
   sd.improvement.perc(nogci.high.state$succ$request_time, gci.high.state$succ$request_time)
 ), ncol=1, byrow=T))
   
 colnames(sd.imp.table) <- c("Latency Stdev Improvement (%)")
 rownames(sd.imp.table) <- c(
-  "Stateless & Low Heap Pressure",
- "Stateless & High Heap Pressure",
- "Statefull & Low Heap Pressure",
- "Statefull & High Heap Pressure"
+ "Stateless",
+ "Statefull"
 )
 sd.imp.table
 ```
@@ -239,17 +176,13 @@ tp.improvement.perc <- function(df1, df2) {
 }
 
 tp.imp.table <- as.table(matrix(c(
-  tp.improvement.perc(nogci.low.nostate$succ, gci.low.nostate$succ),
   tp.improvement.perc(nogci.high.nostate$succ, gci.high.nostate$succ),
-  tp.improvement.perc(nogci.low.state$succ, gci.low.state$succ),
   tp.improvement.perc(nogci.high.state$succ, gci.high.state$succ)
 ), ncol=1, byrow=T))
   
 colnames(tp.imp.table) <- c("Throughput Drop (%)")
 rownames(tp.imp.table) <- c(
-  "Stateless & Low Heap Pressure",
  "Stateless & High Heap Pressure",
- "Statefull & Low Heap Pressure",
  "Statefull & High Heap Pressure"
 )
 tp.imp.table

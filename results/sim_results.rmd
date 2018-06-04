@@ -1,0 +1,163 @@
+---
+title: "GCI Simulator Results"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "June, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=F)
+
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+
+source("functions.R")
+
+REP <- 2
+WARMUP_SECS <- 240
+DURATION_SECS <- 0
+
+read.simresult <- function(f) {
+  df <- read.csv(f)
+  df <- df %>% arrange(timestamp)
+  return(list(
+    warm=df,
+    succ=filter(df, status == 200),
+    fail=filter(df, status == 503)
+  ))
+}
+
+simresult <- function(prefix, n) {
+  fname <- paste(prefix, "_1.csv", sep="")
+  res <- read.simresult(fname)
+  res$succ["expid"] <- 1
+  res$succ["id"] <- seq(1,NROW(res$succ))
+  if (n == 1) {
+    return(res)
+  }
+  for (i in 2:n) {
+    aux <- read.simresult(paste(prefix, "_1.csv", sep=""))
+    aux$succ["expid"] <- i
+    aux$succ["id"] <- seq(1,NROW(aux$succ))
+    res$succ <- rbind(res$succ, aux$succ)
+    res$warm <- rbind(res$warn, aux$warn)
+    res$fail <- rbind(res$fail, aux$fail)
+  }
+  return(res)
+}
+```
+
+```{r}
+sim.nogci.1i.nostate <- simresult("sim/sim_output_nogci_sl_300_30_1", REP)
+sim.nogci.1i.state <- simresult("sim/sim_output_nogci_sf_300_30_1", REP)
+sim.nogci.2i.nostate <- simresult("sim/sim_output_nogci_sl_300_60_2", REP)
+sim.nogci.2i.state <- simresult("sim/sim_output_nogci_sf_300_60_2", REP)
+sim.nogci.cmp <- rbind(
+  data.frame("latency"=sim.nogci.1i.nostate$succ$latency, type="OFF", state="Stateless", n="1 Instance"),
+  data.frame("latency"=sim.nogci.1i.state$succ$latency, type="OFF", state="Stateful", n="1 Instance"),
+  data.frame("latency"=sim.nogci.2i.nostate$succ$latency, type="OFF", state="Stateless", n="2 Instances"),
+  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="OFF", state="Stateful", n="2 Instances")
+)
+
+sim.gci.1i.nostate <- simresult("sim/sim_output_gci_sl_300_30_1", REP)
+sim.gci.1i.state <- simresult("sim/sim_output_gci_sf_300_30_1", REP)
+sim.gci.2i.nostate <- simresult("sim/sim_output_gci_sl_300_60_2", REP)
+sim.gci.2i.state <- simresult("sim/sim_output_gci_sf_300_60_2", REP)
+sim.gci.cmp <- rbind(
+  data.frame("latency"=sim.gci.1i.nostate$succ$latency, type="ON", state="Stateless", n="1 Instance"),
+  data.frame("latency"=sim.gci.1i.state$succ$latency, type="ON", state="Stateful", n="1 Instance"),
+  data.frame("latency"=sim.gci.2i.nostate$succ$latency, type="ON", state="Stateless", n="2 Instances"),
+  data.frame("latency"=sim.gci.2i.state$succ$latency, type="ON", state="Stateful", n="2 Instances")
+)
+
+cmp <- rbind(sim.gci.cmp, sim.nogci.cmp)
+```
+
+# Simulation results
+
+### GCI Off
+
+How does a simple service without GCI deal with changes in heap pressure and
+keeping state?
+
+```{r}
+ggplot(cmp, aes(type, latency)) +
+  geom_boxplot() +
+  facet_grid(state ~n) +
+  scale_y_continuous(breaks=seq(0,max(cmp$latency), 10)) +
+  ylab("Latency(ms)") +
+  theme(axis.title.x=element_blank())
+```
+```{r}
+ggplot(cmp, aes(latency, linetype=type)) +
+  stat_ecdf() +
+  facet_grid(state ~ n) +
+  xlab("Latency(ms)") +
+  ylab("ECDF at Tail") +
+  scale_x_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+  coord_cartesian(ylim = c(0.99, 1)) +
+  theme(legend.position="top")
+```
+
+#### Latency improvement
+
+How much does the tail latency improve by switching GCI ON?
+
+**1 Instance (%)**
+```{r}
+t.nogci.1i <- tail.table(
+  sim.nogci.1i.nostate$succ$latency,
+  sim.nogci.1i.state$succ$latency)
+t.gci.1i <- tail.table(
+  sim.gci.1i.nostate$succ$latency,
+  sim.gci.1i.state$succ$latency)
+((t.nogci.1i-t.gci.1i)/t.nogci.1i)*100
+```
+**2 Instances (%)**
+```{r}
+t.nogci.2i <- tail.table(
+  sim.nogci.2i.nostate$succ$latency,
+  sim.nogci.2i.state$succ$latency)
+t.gci.2i <- tail.table(
+  sim.gci.2i.nostate$succ$latency,
+  sim.gci.2i.state$succ$latency)
+((t.nogci.2i-t.gci.2i)/t.nogci.2i)*100
+```
+#### Latency Stddev Improvement (%)
+
+How much does the tail latency variability decrease by switching GCI ON?
+
+```{r}
+sd.imp.table <- as.table(matrix(c(
+  sd.improvement.perc(sim.nogci.1i.nostate$succ$latency, sim.gci.1i.nostate$succ$latency),
+  sd.improvement.perc(sim.nogci.2i.nostate$succ$latency, sim.gci.2i.nostate$succ$latency),
+  sd.improvement.perc(sim.nogci.1i.state$succ$latency, sim.gci.1i.state$succ$latency),
+  sd.improvement.perc(sim.nogci.2i.state$succ$latency, sim.gci.2i.state$succ$latency)
+), ncol=2, byrow=T))
+  
+colnames(sd.imp.table) <- c("1 Instance", "2 Instances")
+rownames(sd.imp.table) <- c("Stateless", "Statefull")
+sd.imp.table
+```
+
+### Throughput Drop (%)
+
+How much does the throughput drop by switching GCI on?
+
+```{r}
+tp.imp.table <- as.table(matrix(c(
+  tp.improvement.perc(sim.nogci.1i.nostate$succ, sim.gci.1i.nostate$succ),
+  tp.improvement.perc(sim.nogci.2i.nostate$succ, sim.gci.2i.nostate$succ),
+  tp.improvement.perc(sim.nogci.1i.state$succ, sim.gci.1i.state$succ),
+  tp.improvement.perc(sim.nogci.2i.state$succ, sim.gci.2i.state$succ)
+), ncol=2, byrow=T))
+  
+colnames(tp.imp.table) <- c("1 Instance", "2 Instances")
+rownames(tp.imp.table) <- c("Stateless", "Statefull"
+)
+tp.imp.table
+```

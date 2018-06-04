@@ -41,19 +41,6 @@
       }
     },
     {
-      "name": "gci4",
-      "path": "al_gci_T80_4.log",
-      "profile": "tabular-data-resource",
-      "schema": {
-        "fields": [
-          {"name": "timestamp", "type": "number"},
-          {"name": "status", "type": "integer"},
-          {"name": "request_time", "type": "number"},
-          {"name": "upstream_response_time", "type": "string"}
-        ]
-      }
-    },
-    {
       "name": "nogci1",
       "path": "al_nogci_T80_1.log",
       "profile": "tabular-data-resource",
@@ -82,19 +69,6 @@
     {
       "name": "nogci3",
       "path": "al_nogci_T80_3.log",
-      "profile": "tabular-data-resource",
-      "schema": {
-         "fields": [
-          {"name": "timestamp", "type": "number"},
-          {"name": "status", "type": "integer"},
-          {"name": "request_time", "type": "number"},
-          {"name": "upstream_response_time", "type": "string"}
-        ]
-      }
-    },
-    {
-      "name": "nogci4",
-      "path": "al_nogci_T80_4.log",
       "profile": "tabular-data-resource",
       "schema": {
          "fields": [

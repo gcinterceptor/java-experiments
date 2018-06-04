@@ -1,0 +1,162 @@
+---
+title: "GCI Simulator validation"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "June, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=F)
+
+require(dplyr)
+require(stringr)
+require(cowplot)
+require(ggplot2)
+
+source("functions.R")
+
+REP <- 2
+WARMUP_SECS <- 240
+DURATION_SECS <- 0
+
+read.simresult <- function(f) {
+  df <- read.csv(f)
+  df <- df %>% arrange(timestamp)
+  return(list(
+    warm=df,
+    succ=filter(df, status == 200),
+    fail=filter(df, status == 503)
+  ))
+}
+
+simresult <- function(prefix, n) {
+  fname <- paste(prefix, "_1.csv", sep="")
+  res <- read.simresult(fname)
+  res$succ["expid"] <- 1
+  res$succ["id"] <- seq(1,NROW(res$succ))
+  if (n == 1) {
+    return(res)
+  }
+  for (i in 2:n) {
+    aux <- read.simresult(paste(prefix, "_1.csv", sep=""))
+    aux$succ["expid"] <- i
+    aux$succ["id"] <- seq(1,NROW(aux$succ))
+    res$succ <- rbind(res$succ, aux$succ)
+    res$warm <- rbind(res$warn, aux$warn)
+    res$fail <- rbind(res$fail, aux$fail)
+  }
+  return(res)
+}
+```
+
+```{r}
+sim.nogci.1i.nostate <- simresult("sim/sim_output_nogci_sl_300_30_1", REP)
+sim.nogci.1i.state <- simresult("sim/sim_output_nogci_sf_300_30_1", REP)
+sim.nogci.2i.nostate <- simresult("sim/sim_output_nogci_sl_300_60_2", REP)
+sim.nogci.2i.state <- simresult("sim/sim_output_nogci_sf_300_60_2", REP)
+sim.nogci.cmp <- rbind(
+  data.frame("latency"=sim.nogci.1i.nostate$succ$latency, type="OFF", state="Stateless", n="1 Instance"),
+  data.frame("latency"=sim.nogci.1i.state$succ$latency, type="OFF", state="Stateful", n="1 Instance"),
+  data.frame("latency"=sim.nogci.2i.nostate$succ$latency, type="OFF", state="Stateless", n="2 Instances"),
+  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="OFF", state="Stateful", n="2 Instances")
+)
+
+sim.gci.1i.nostate <- simresult("sim/sim_output_gci_sl_300_30_1", REP)
+sim.gci.1i.state <- simresult("sim/sim_output_gci_sf_300_30_1", REP)
+sim.gci.2i.nostate <- simresult("sim/sim_output_gci_sl_300_60_2", REP)
+sim.gci.2i.state <- simresult("sim/sim_output_gci_sf_300_60_2", REP)
+sim.gci.cmp <- rbind(
+  data.frame("latency"=sim.gci.1i.nostate$succ$latency, type="ON", state="Stateless", n="1 Instance"),
+  data.frame("latency"=sim.gci.1i.state$succ$latency, type="ON", state="Stateful", n="1 Instance"),
+  data.frame("latency"=sim.gci.2i.nostate$succ$latency, type="ON", state="Stateless", n="2 Instances"),
+  data.frame("latency"=sim.gci.2i.state$succ$latency, type="ON", state="Stateful", n="2 Instances")
+)
+
+exp.gci.1i.nostate <- accesslog("1i", "gci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+exp.gci.1i.state <- accesslog("1i", "gci_T30_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+exp.gci.2i.nostate <- accesslog("2i", "gci_T60_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+exp.gci.2i.state <- accesslog("2i", "gci_T60_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+exp.gci.cmp <- rbind(
+  data.frame("latency"=exp.gci.1i.nostate$succ$request_time, type="ON", state="Stateless", n="1 Instance"),
+  data.frame("latency"=exp.gci.1i.state$succ$request_time, type="ON", state="Stateful", n="1 Instance"),
+  data.frame("latency"=exp.gci.2i.nostate$succ$request_time, type="ON", state="Stateless", n="2 Instance"),
+  data.frame("latency"=exp.gci.2i.state$succ$request_time, type="ON", state="Stateful", n="2 Instance")
+)
+
+exp.nogci.1i.nostate <- accesslog("1i", "nogci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+exp.nogci.1i.state <- accesslog("1i", "nogci_T30_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+exp.nogci.2i.nostate <- accesslog("2i", "nogci_T60_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
+exp.nogci.2i.state <- accesslog("2i", "nogci_T60_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
+exp.nogci.cmp <- rbind(
+  data.frame("latency"=exp.nogci.1i.nostate$succ$request_time, type="OFF", state="Stateless", n="1 Instance"),
+  data.frame("latency"=exp.nogci.1i.state$succ$request_time, type="OFF", state="Stateful", n="1 Instance"),
+  data.frame("latency"=exp.nogci.2i.state$succ$request_time, type="OFF", state="Stateful", n="2 Instances"),
+  data.frame("latency"=exp.nogci.2i.state$succ$request_time, type="OFF", state="Stateful", n="2 Instances")
+)
+
+exp.cmp <- rbind(exp.gci.cmp, exp.nogci.cmp)
+sim.cmp <- rbind(sim.gci.cmp, sim.nogci.cmp)
+```
+
+It is ideal to have an statistical test to check how close the simulator latency is to the experiment latency. This "closeness" can be measured by a Goodness-of-Fit (GoF) test. We used the two-sample Kolmogorov-Smirnov (KS) test, which checks the null hypothesis: the two samples are drawn from the same distribution. 
+
+The KS test has an issue of being sensitive for large samples. As the data samples used are all large ($10,000+$ datapoints), we applied an approach used in other modelling studies to mitigate this issue i.e. [this](http://ieeexplore.ieee.org/document/5703090/), [this](http://ieeexplore.ieee.org/document/5367061/) and [Marcus' paper](http://ieeexplore.ieee.org/document/6319153/?reload=true) (more at Marcus' paper, including references to goodness-of-fit tests). We selected $1000$ random samples of size $30$ for each fitted data, obtain the p-values for the KS test applied to each sample and then calculate the average p-value.
+
+**1 Instance**
+```{r cache=T}
+ks.pvalue <- function(e, s) {
+  return(mean(bind_rows(
+      replicate(
+          1000,
+          ks.test(sample_n(e, 30)$request_time, sample_n(s, 30)$latency),
+          simplify = F),
+      .id="Obs")$p.value))
+}
+
+ks.1i.table <- as.table(matrix(
+  c(
+    ks.pvalue(exp.nogci.1i.nostate$succ, sim.nogci.1i.nostate$succ), ks.pvalue(exp.gci.1i.nostate$succ, sim.gci.1i.nostate$succ),
+    ks.pvalue(exp.nogci.1i.state$succ, sim.nogci.1i.state$succ), ks.pvalue(exp.gci.1i.state$succ, sim.gci.1i.state$succ)
+  ),
+  ncol=2, byrow=T)
+)
+colnames(ks.1i.table) <- c("GCI Off", "GCI On")
+rownames(ks.1i.table) <- c("Stateless", "Statefull")
+knitr::kable(ks.1i.table)
+```
+
+**2 Instances**
+
+```{r cache=T}
+ks.2i.table <- as.table(matrix(
+  c(
+    ks.pvalue(exp.nogci.2i.nostate$succ, sim.nogci.2i.nostate$succ), ks.pvalue(exp.gci.2i.nostate$succ, sim.gci.2i.nostate$succ),
+    ks.pvalue(exp.nogci.2i.state$succ, sim.nogci.2i.state$succ), ks.pvalue(exp.gci.2i.state$succ, sim.gci.2i.state$succ)
+  ),
+  ncol=2, byrow=T)
+)
+colnames(ks.2i.table) <- c("GCI Off", "GCI On")
+rownames(ks.2i.table) <- c("Stateless", "Statefull")
+knitr::kable(ks.2i.table)
+```
+
+**Conclusion**
+
+As p-values are that high we can not refute the null hyphothesis: one *cannot* claim statistical support for a difference between the simulator and experiment results.
+
+
+# Appendix
+
+## Kolmogorov-Smirnov Two-Sample Test
+
+More references:
+
+* [KS Test in R](https://stats.stackexchange.com/questions/222294/understanding-kolmogorov-smirnov-test-in-r)
+
+* [KS Test in discrete variables](https://stats.stackexchange.com/questions/48317/kolmogorov-smirnov-with-discrete-data-what-is-proper-use-of-dgofks-test-in-r)
+
+* [KS Test](https://onlinecourses.science.psu.edu/stat414/node/234)
+
+* [KS Test](http://www.physics.csbsju.edu/stats/KS-test.html)

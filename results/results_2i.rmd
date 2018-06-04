@@ -26,8 +26,8 @@ WARMUP_SECS <- 120
 # Latency comparison
 
 ```{r}
-al.gci.warm <- accesslog("2i", "gci_T80_Java9_YoungGCOnly_Proxy", 1, WARMUP_SECS)
-al.nogci.warm <- accesslog("2i", "nogci_T80_Java9_YoungGCOnly", 1, WARMUP_SECS)
+al.gci.warm <- accesslog("2i", "gci_T80", 1, WARMUP_SECS)
+al.nogci.warm <- accesslog("2i", "nogci_T80", 1, WARMUP_SECS)
 al.gci <- filter(al.gci.warm, status == 200)
 al.nogci <- filter(al.nogci.warm, status == 200)
   

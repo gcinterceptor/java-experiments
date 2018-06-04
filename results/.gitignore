@@ -1,0 +1,10 @@
+*.csv
+*.log
+*.err
+*.out
+*.zip
+*cache/
+*files/
+*html
+*zip
+*pdf

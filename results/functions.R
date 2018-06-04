@@ -24,7 +24,6 @@ read.accesslog <- function(f, warmup, duration) {
   al$hop2 <- sub('^.*,', '', al$upstream_response_time)
   al$hop2 <- as.numeric(al$hop2)*1000
   al$num_hops <- str_count(al$upstream_response_time, ',')+1
-  
   return(list(
     warm=al,
     succ=filter(al, status == 200),
@@ -35,16 +34,18 @@ read.accesslog <- function(f, warmup, duration) {
 accesslog <- function(outdir, exp, n, warmup, duration) {
   fname <- paste(outdir, "/al_", exp, "_1.log", sep="")
   al <- read.accesslog(fname, warmup, duration)
-  al["expid"] <- 1
-  al["id"] <- seq(1,NROW(al))
+  al$succ["expid"] <- 1
+  al$succ["id"] <- seq(1,NROW(al$succ))
   if (n == 1) {
     return(al)
   }
   for (i in 2:n) {
     aux <- read.accesslog(paste(outdir, "/al_", exp, "_", i,".log", sep=""), warmup, duration)
-    aux["expid"] <- i
-    aux["id"] <- seq(1,NROW(aux))
-    al <- rbind(al, aux)
+    aux$succ["expid"] <- i
+    aux$succ["id"] <- seq(1,NROW(aux$succ))
+    al$succ <- rbind(al$succ, aux$succ)
+    al$warn <- rbind(al$warn, aux$warn)
+    al$fail <- rbind(al$fail, aux$fail)
   }
   return(al)
 }
@@ -95,4 +96,47 @@ ci.p9999 <- function(x) {
 
 ci.p99999 <- function(x) {
   return(ci.p(x, 0.99999))
+}
+
+q.plot.data <- function(df) {
+  q <-  df %>% group_by(trunc(timestamp)) %>% summarize(
+    q50 = quantile(request_time, 0.5),
+    q90 = quantile(request_time, 0.9),
+    q99 = quantile(request_time, 0.99),
+    q999 = quantile(request_time, 0.999),
+    q9999 = quantile(request_time, 0.9999),
+    max = max(request_time))
+  q <- melt(q, id="trunc(timestamp)")
+  colnames(q) <- c("ts", "func", "value")
+  return(q)
+}
+
+tp <- function(df){
+  return(NROW(df)/(df$timestamp[NROW(df)]-df$timestamp[1]))
+}
+
+tp.improvement.perc <- function(df1, df2) {
+  return(((tp(df1)-tp(df2))/tp(df1))*100)
+}
+
+sd.improvement.perc <- function(df1, df2) {
+  return(((sd(df1)-sd(df2))/sd(df1))*100)
+}
+
+tail.table <- function(statelessHighHP, statfulHighHP) {
+  q.nshl <- quantile(statelessHighHP, c(0.99, 0.999, 0.9999, 0.99999))
+  q.shl <-  quantile(statfulHighHP, c(0.99, 0.999, 0.9999, 0.99999))
+  
+  t1.df <- as.table(matrix(
+    c(
+      q.nshl[1], q.nshl[2], q.nshl[3], q.nshl[4],
+      q.shl[1], q.shl[2], q.shl[3], q.shl[4]
+    ), ncol=4, byrow=T))
+  
+  colnames(t1.df) <- c("99%", "99.9%", "99.99%", "99.999")
+  rownames(t1.df) <- c(
+    "Stateless",
+    "Statefull"
+  )
+  return(t1.df)
 }
