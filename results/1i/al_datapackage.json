@@ -19,7 +19,37 @@
     {
       "name": "nogci_sl_2",
       "path": "al_nogci_T30_M262144_W0_2.log",
-      "description": "GCI off, iteration 2.",
+      "description": "GCI off, stateless, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_3",
+      "path": "al_nogci_T30_M262144_W0_3.log",
+      "description": "GCI off, stateless, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_4",
+      "path": "al_nogci_T30_M262144_W0_4.log",
+      "description": "GCI off, stateless, iteration 4.",
       "format": "csv",
       "profile": "tabular-data-resource",
       "schema": {
@@ -34,7 +64,7 @@
     {
       "name": "gci_sl_1",
       "path": "al_gci_T30_M262144_W0_1.log",
-      "description": "GCI on, high heap pressure, stateless, iteration 1.",
+      "description": "GCI on, stateless, iteration 1.",
       "format": "csv",
       "profile": "tabular-data-resource",
       "schema": {
@@ -49,7 +79,37 @@
     {
       "name": "gci_sl_2",
       "path": "al_gci_T30_M262144_W0_2.log",
-      "description": "GCI on, high heap pressure, stateless, iteration 2.",
+      "description": "GCI on, stateless, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_3",
+      "path": "al_gci_T30_M262144_W0_3.log",
+      "description": "GCI on, stateless, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_4",
+      "path": "al_gci_T30_M262144_W0_4.log",
+      "description": "GCI on, stateless, iteration 4.",
       "format": "csv",
       "profile": "tabular-data-resource",
       "schema": {
@@ -92,6 +152,36 @@
       }
     },
     {
+      "name": "nogci_sf_3",
+      "path": "al_nogci_T30_M262144_W500_3.log",
+      "description": "GCI off, stateful, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_4",
+      "path": "al_nogci_T30_M262144_W500_4.log",
+      "description": "GCI off, stateful, iteration 4.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
       "name": "gci_sf_1",
       "path": "al_gci_T30_M262144_W500_1.log",
       "description": "GCI on, stateful, iteration 1.",
@@ -109,7 +199,37 @@
     {
       "name": "gci_sf_2",
       "path": "al_gci_T30_M262144_W500_2.log",
-      "description": "GCI on, high heap pressure, stateful, iteration 2.",
+      "description": "GCI on, stateful, iteration 2.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_3",
+      "path": "al_gci_T30_M262144_W500_3.log",
+      "description": "GCI on, stateful, iteration 3.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_4",
+      "path": "al_gci_T30_M262144_W500_4.log",
+      "description": "GCI on, stateful, iteration 4.",
       "format": "csv",
       "profile": "tabular-data-resource",
       "schema": {
