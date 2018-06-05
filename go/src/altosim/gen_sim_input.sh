@@ -2,13 +2,12 @@
 
 set -x
 
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=gci_lh_sf_1 --warmup=240s > sim_input_gci_lh_sf.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=gci_lh_sl_1 --warmup=240s > sim_input_gci_lh_sl.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=gci_hh_sf_1 --warmup=240s > sim_input_gci_hh_sf.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=gci_hh_sl_1 --warmup=240s > sim_input_gci_hh_sl.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=nogci_lh_sf_1 --warmup=240s > sim_input_nogci_lh_sf.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=nogci_lh_sl_1 --warmup=240s > sim_input_nogci_lh_sl.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=nogci_hh_sf_1 --warmup=240s > sim_input_nogci_hh_sf.csv
-./altosim --al_datapackage=../../../results/1i/al_datapackage.json --resource=nogci_hh_sl_1 --warmup=240s > sim_input_nogci_hh_sl.csv
+rm, *.csv
+
+for i in `seq 1 4`; do ./altosim --al_datapackage=/home/fireman/repos/java-experiments/results/1i/al_datapackage.json --resource=gci_sf_$i --warmup=240s > sim_input_gci_sf_$i.csv; done
+for i in `seq 1 4`; do ./altosim --al_datapackage=/home/fireman/repos/java-experiments/results/1i/al_datapackage.json --resource=gci_sl_$i --warmup=240s > sim_input_gci_sl_$i.csv; done
+for i in `seq 1 4`; do ./altosim --al_datapackage=/home/fireman/repos/java-experiments/results/1i/al_datapackage.json --resource=nogci_sf_$i --warmup=240s > sim_input_gci_sf_$i.csv; done
+for i in `seq 1 4`; do ./altosim --al_datapackage=/home/fireman/repos/java-experiments/results/1i/al_datapackage.json --resource=nogci_sl_$i --warmup=240s > sim_input_gci_sl_$i.csv; done
+
 
 zip sim_input.zip sim_input*.csv
