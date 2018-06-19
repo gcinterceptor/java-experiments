@@ -1,7 +1,7 @@
 {
   "profile": "tabular-data-package",
   "resources": [
-   {
+    {
       "name": "nogci_sl_1",
       "path": "al_nogci_T30_M262144_W0_1.log",
       "description": "GCI off, stateless, iteration 1.",
@@ -50,6 +50,187 @@
       "name": "nogci_sl_4",
       "path": "al_nogci_T30_M262144_W0_4.log",
       "description": "GCI off, stateless, iteration 4.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+
+   {
+      "name": "nogci_sl_5",
+      "path": "al_nogci_T30_M262144_W0_5.log",
+      "description": "GCI off, stateless, iteration 5.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_6",
+      "path": "al_nogci_T30_M262144_W0_6.log",
+      "description": "GCI off, stateless, iteration 6.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_7",
+      "path": "al_nogci_T30_M262144_W0_7.log",
+      "description": "GCI off, stateless, iteration 7.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_8",
+      "path": "al_nogci_T30_M262144_W0_8.log",
+      "description": "GCI off, stateless, iteration 8.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_9",
+      "path": "al_nogci_T30_M262144_W0_9.log",
+      "description": "GCI off, stateless, iteration 9.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_10",
+      "path": "al_nogci_T30_M262144_W0_10.log",
+      "description": "GCI off, stateless, iteration 10.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_11",
+      "path": "al_nogci_T30_M262144_W0_11.log",
+      "description": "GCI off, stateless, iteration 11.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_12",
+      "path": "al_nogci_T30_M262144_W0_12.log",
+      "description": "GCI off, stateless, iteration 12.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_13",
+      "path": "al_nogci_T30_M262144_W0_13.log",
+      "description": "GCI off, stateless, iteration 13.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_14",
+      "path": "al_nogci_T30_M262144_W0_14.log",
+      "description": "GCI off, stateless, iteration 14.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_15",
+      "path": "al_nogci_T30_M262144_W0_15.log",
+      "description": "GCI off, stateless, iteration 15.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sl_16",
+      "path": "al_nogci_T30_M262144_W0_16.log",
+      "description": "GCI off, stateless, iteration 16.",
       "format": "csv",
       "profile": "tabular-data-resource",
       "schema": {
@@ -122,6 +303,186 @@
       }
     },
     {
+      "name": "gci_sl_5",
+      "path": "al_gci_T30_M262144_W0_5.log",
+      "description": "GCI on, stateless, iteration 5.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_6",
+      "path": "al_gci_T30_M262144_W0_6.log",
+      "description": "GCI on, stateless, iteration 6.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_7",
+      "path": "al_gci_T30_M262144_W0_7.log",
+      "description": "GCI on, stateless, iteration 7.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_8",
+      "path": "al_gci_T30_M262144_W0_8.log",
+      "description": "GCI on, stateless, iteration 8.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_9",
+      "path": "al_gci_T30_M262144_W0_9.log",
+      "description": "GCI on, stateless, iteration 9.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_10",
+      "path": "al_gci_T30_M262144_W0_10.log",
+      "description": "GCI on, stateless, iteration 10.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_11",
+      "path": "al_gci_T30_M262144_W0_11.log",
+      "description": "GCI on, stateless, iteration 11.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_12",
+      "path": "al_gci_T30_M262144_W0_12.log",
+      "description": "GCI on, stateless, iteration 12.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_13",
+      "path": "al_gci_T30_M262144_W0_13.log",
+      "description": "GCI on, stateless, iteration 13.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_14",
+      "path": "al_gci_T30_M262144_W0_14.log",
+      "description": "GCI on, stateless, iteration 14.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_15",
+      "path": "al_gci_T30_M262144_W0_15.log",
+      "description": "GCI on, stateless, iteration 15.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sl_16",
+      "path": "al_gci_T30_M262144_W0_16.log",
+      "description": "GCI on, stateless, iteration 16.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
       "name": "nogci_sf_1",
       "path": "al_nogci_T30_M262144_W500_1.log",
       "description": "GCI off, stateful, iteration 1.",
@@ -182,6 +543,186 @@
       }
     },
     {
+      "name": "nogci_sf_5",
+      "path": "al_nogci_T30_M262144_W500_5.log",
+      "description": "GCI off, stateful, iteration 5.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_6",
+      "path": "al_nogci_T30_M262144_W500_6.log",
+      "description": "GCI off, stateful, iteration 6.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_7",
+      "path": "al_nogci_T30_M262144_W500_7.log",
+      "description": "GCI off, stateful, iteration 7.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_8",
+      "path": "al_nogci_T30_M262144_W500_8.log",
+      "description": "GCI off, stateful, iteration 8.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_9",
+      "path": "al_nogci_T30_M262144_W500_9.log",
+      "description": "GCI off, stateful, iteration 9.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_10",
+      "path": "al_nogci_T30_M262144_W500_10.log",
+      "description": "GCI off, stateful, iteration 10.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_11",
+      "path": "al_nogci_T30_M262144_W500_11.log",
+      "description": "GCI off, stateful, iteration 11.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_12",
+      "path": "al_nogci_T30_M262144_W500_12.log",
+      "description": "GCI off, stateful, iteration 12.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_13",
+      "path": "al_nogci_T30_M262144_W500_13.log",
+      "description": "GCI off, stateful, iteration 13.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_14",
+      "path": "al_nogci_T30_M262144_W500_14.log",
+      "description": "GCI off, stateful, iteration 14.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_15",
+      "path": "al_nogci_T30_M262144_W500_15.log",
+      "description": "GCI off, stateful, iteration 15.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "nogci_sf_16",
+      "path": "al_nogci_T30_M262144_W500_16.log",
+      "description": "GCI off, stateful, iteration 16.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
       "name": "gci_sf_1",
       "path": "al_gci_T30_M262144_W500_1.log",
       "description": "GCI on, stateful, iteration 1.",
@@ -230,6 +771,186 @@
       "name": "gci_sf_4",
       "path": "al_gci_T30_M262144_W500_4.log",
       "description": "GCI on, stateful, iteration 4.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_5",
+      "path": "al_gci_T30_M262144_W500_5.log",
+      "description": "GCI on, stateful, iteration 5.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_6",
+      "path": "al_gci_T30_M262144_W500_6.log",
+      "description": "GCI on, stateful, iteration 6.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_7",
+      "path": "al_gci_T30_M262144_W500_7.log",
+      "description": "GCI on, stateful, iteration 7.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_8",
+      "path": "al_gci_T30_M262144_W500_8.log",
+      "description": "GCI on, stateful, iteration 8.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_9",
+      "path": "al_gci_T30_M262144_W500_9.log",
+      "description": "GCI on, stateful, iteration 9.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_10",
+      "path": "al_gci_T30_M262144_W500_10.log",
+      "description": "GCI on, stateful, iteration 10.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_11",
+      "path": "al_gci_T30_M262144_W500_11.log",
+      "description": "GCI on, stateful, iteration 11.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_12",
+      "path": "al_gci_T30_M262144_W500_12.log",
+      "description": "GCI on, stateful, iteration 12.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_13",
+      "path": "al_gci_T30_M262144_W500_13.log",
+      "description": "GCI on, stateful, iteration 13.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_14",
+      "path": "al_gci_T30_M262144_W500_14.log",
+      "description": "GCI on, stateful, iteration 14.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_15",
+      "path": "al_gci_T30_M262144_W500_15.log",
+      "description": "GCI on, stateful, iteration 15.",
+      "format": "csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {"name": "timestamp", "type": "number"},
+          {"name": "status", "type": "integer"},
+          {"name": "request_time", "type": "number"},
+          {"name": "upstream_response_time", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "gci_sf_16",
+      "path": "al_gci_T30_M262144_W500_16.log",
+      "description": "GCI on, stateful, iteration 16.",
       "format": "csv",
       "profile": "tabular-data-resource",
       "schema": {
