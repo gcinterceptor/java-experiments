@@ -1,0 +1,63 @@
+---
+title: "Scratchpad"
+author: "Daniel Fireman (danielfireman@gmail.com)"
+date: "June 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(cache=F)
+
+require(dplyr)
+require(cowplot)
+require(ggplot2)
+require(rex)
+library(grid)
+
+source("functions.R")
+
+REP <- 1
+WARMUP_SECS <- 240
+DURATION_SECS <- 0
+```
+
+# One Experiment
+
+```{r}
+percs.nogci.1i.state <- read.csv("1i/percs_nogci_T30_M262144_W500_1.csv")
+percs.nogci.1i.state <- percs.nogci.1i.state %>% arrange(timestamp)
+percs.nogci.1i.state$timestamp <- c(0, percs.nogci.1i.state$timestamp[2:NROW(percs.nogci.1i.state)]-percs.nogci.1i.state$timestamp[1])
+percs.nogci.1i.state <- percs.nogci.1i.state %>% filter(timestamp >= 360 & timestamp <= 600)
+
+gc.nogci.1i.state <- scan("1i/gc_nogci_T30_M262144_W500_1_1.log", what = "character", sep = "\n") %>%
+  re_matches(
+    rex(
+      start,
+      "[", capture(name="timestamp", numbers),"ms]", anything, "->", capture(name="mem", numbers), "M", anything,
+      end
+    )
+  ) %>% mutate(timestamp=as.numeric(timestamp), mem=as.numeric(mem))
+gc.nogci.1i.state <- gc.nogci.1i.state %>% mutate(timestamp=timestamp/1000) %>% arrange(timestamp) %>% na.omit()
+gc.nogci.1i.state$timestamp <- c(0,gc.nogci.1i.state$timestamp[2:NROW(gc.nogci.1i.state)]-gc.nogci.1i.state$timestamp[1])
+gc.nogci.1i.state <- gc.nogci.1i.state %>% filter(timestamp >= 360 & timestamp <= 600)
+```
+
+```{r}
+plot1 <- ggplot(data=gc.nogci.1i.state, aes(x=timestamp, y=mem)) +
+  geom_line() +
+  ylab("Red drops / L") +
+  theme_minimal() +
+  theme(axis.title.x = element_blank())
+
+plot2 <-ggplot(data=percs.nogci.1i.state, aes(x=timestamp)) +
+  geom_line(aes(y=p50_ms)) +
+  geom_line(aes(y=p99_ms)) +
+  ylab("Blue drops / L") +
+  theme_minimal() +
+  theme(axis.title.x = element_blank())
+
+grid.newpage()
+grid.draw(rbind(ggplotGrob(plot1), ggplotGrob(plot2), size = "last"))
+```
