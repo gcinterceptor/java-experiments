@@ -1,3 +1,5 @@
+require(stringr)
+
 # Parses the experiment's NGINX log file.
 read.accesslog <- function(f, warmup, duration) {
   # https://lincolnloop.com/blog/tracking-application-response-time-nginx/
