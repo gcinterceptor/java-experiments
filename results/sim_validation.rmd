@@ -2,7 +2,9 @@
 title: "GCI Simulator validation"
 author: "Daniel Fireman (danielfireman@gmail.com)"
 date: "June, 2018"
-output: html_document
+output:
+  pdf_document:
+    keep_tex: true
 ---
 
 ```{r setup, include=FALSE}
@@ -59,12 +61,12 @@ sim.nogci.2i.state <- simresult("sim/sim_output_nogci_sf_300_60_2", REP)
 sim.nogci.4i.nostate <- simresult("sim/sim_output_nogci_sl_300_120_4", REP)
 sim.nogci.4i.state <- simresult("sim/sim_output_nogci_sf_300_120_4", REP)
 sim.nogci.cmp <- rbind(
-  data.frame("latency"=sim.nogci.1i.nostate$succ$latency, type="OFF", state="Stateless", n="1 Instance"),
-  data.frame("latency"=sim.nogci.1i.state$succ$latency, type="OFF", state="Stateful", n="1 Instance"),
-  data.frame("latency"=sim.nogci.2i.nostate$succ$latency, type="OFF", state="Stateless", n="2 Instances"),
-  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="OFF", state="Stateful", n="2 Instances"),
-  data.frame("latency"=sim.nogci.4i.nostate$succ$latency, type="OFF", state="Stateless", n="4 Instances"),
-  data.frame("latency"=sim.nogci.4i.state$succ$latency, type="OFF", state="Stateful", n="4 Instances")
+  data.frame("latency"=sim.nogci.1i.nostate$succ$latency, type="GCI OFF", state="Stateless", n="1 Replica", origin="Simulation"),
+  data.frame("latency"=sim.nogci.1i.state$succ$latency, type="GCI OFF", state="Stateful", n="1 Replica", origin="Simulation"),
+  data.frame("latency"=sim.nogci.2i.nostate$succ$latency, type="GCI OFF", state="Stateless", n="2 Replicas", origin="Simulation"),
+  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="GCI OFF", state="Stateful", n="2 Replicas", origin="Simulation"),
+  data.frame("latency"=sim.nogci.4i.nostate$succ$latency, type="GCI OFF", state="Stateless", n="4 Replicas", origin="Simulation"),
+  data.frame("latency"=sim.nogci.4i.state$succ$latency, type="GCI OFF", state="Stateful", n="4 Replicas", origin="Simulation")
 )
 
 sim.gci.1i.nostate <- simresult("sim/sim_output_gci_sl_300_30_1", REP)
@@ -74,12 +76,12 @@ sim.gci.2i.state <- simresult("sim/sim_output_gci_sf_300_60_2", REP)
 sim.gci.4i.nostate <- simresult("sim/sim_output_gci_sl_300_120_4", REP)
 sim.gci.4i.state <- simresult("sim/sim_output_gci_sf_300_120_4", REP)
 sim.gci.cmp <- rbind(
-  data.frame("latency"=sim.gci.1i.nostate$succ$latency, type="ON", state="Stateless", n="1 Instance"),
-  data.frame("latency"=sim.gci.1i.state$succ$latency, type="ON", state="Stateful", n="1 Instance"),
-  data.frame("latency"=sim.gci.2i.nostate$succ$latency, type="ON", state="Stateless", n="2 Instances"),
-  data.frame("latency"=sim.gci.2i.state$succ$latency, type="ON", state="Stateful", n="2 Instances"),
-  data.frame("latency"=sim.gci.4i.nostate$succ$latency, type="ON", state="Stateless", n="4 Instances"),
-  data.frame("latency"=sim.gci.4i.state$succ$latency, type="ON", state="Stateful", n="4 Instances")
+  data.frame("latency"=sim.gci.1i.nostate$succ$latency, type="GCI ON", state="Stateless", n="1 Replica", origin="Simulation"),
+  data.frame("latency"=sim.gci.1i.state$succ$latency, type="GCI ON", state="Stateful", n="1 Replica", origin="Simulation"),
+  data.frame("latency"=sim.gci.2i.nostate$succ$latency, type="GCI ON", state="Stateless", n="2 Replicas", origin="Simulation"),
+  data.frame("latency"=sim.gci.2i.state$succ$latency, type="GCI ON", state="Stateful", n="2 Replicas", origin="Simulation"),
+  data.frame("latency"=sim.gci.4i.nostate$succ$latency, type="GCI ON", state="Stateless", n="4 Replicas", origin="Simulation"),
+  data.frame("latency"=sim.gci.4i.state$succ$latency, type="GCI ON", state="Stateful", n="4 Replicas", origin="Simulation")
 )
 
 exp.gci.1i.nostate <- accesslog("1i", "gci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
@@ -89,12 +91,12 @@ exp.gci.2i.state <- accesslog("2i", "gci_T60_M262144_W500", REP, WARMUP_SECS, DU
 exp.gci.4i.nostate <- accesslog("4i", "gci_T120_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
 exp.gci.4i.state <- accesslog("4i", "gci_T120_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
 exp.gci.cmp <- rbind(
-  data.frame("latency"=exp.gci.1i.nostate$succ$request_time, type="ON", state="Stateless", n="1 Instance"),
-  data.frame("latency"=exp.gci.1i.state$succ$request_time, type="ON", state="Stateful", n="1 Instance"),
-  data.frame("latency"=exp.gci.2i.nostate$succ$request_time, type="ON", state="Stateless", n="2 Instance"),
-  data.frame("latency"=exp.gci.2i.state$succ$request_time, type="ON", state="Stateful", n="2 Instances"),
-  data.frame("latency"=exp.gci.4i.nostate$succ$request_time, type="ON", state="Stateless", n="4 Instances"),
-  data.frame("latency"=exp.gci.4i.state$succ$request_time, type="ON", state="Stateful", n="4 Instances")
+  data.frame("latency"=exp.gci.1i.nostate$succ$request_time, type="GCI ON", state="Stateless", n="1 Replica", origin="System Experiment"),
+  data.frame("latency"=exp.gci.1i.state$succ$request_time, type="GCI ON", state="Stateful", n="1 Replica", origin="System Experiment"),
+  data.frame("latency"=exp.gci.2i.nostate$succ$request_time, type="GCI ON", state="Stateless", n="2 Replicas", origin="System Experiment"),
+  data.frame("latency"=exp.gci.2i.state$succ$request_time, type="GCI ON", state="Stateful", n="2 Replicas", origin="System Experiment"),
+  data.frame("latency"=exp.gci.4i.nostate$succ$request_time, type="GCI ON", state="Stateless", n="4 Replicas", origin="System Experiment"),
+  data.frame("latency"=exp.gci.4i.state$succ$request_time, type="GCI ON", state="Stateful", n="4 Replicas", origin="System Experiment")
 )
 
 exp.nogci.1i.nostate <- accesslog("1i", "nogci_T30_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
@@ -104,16 +106,17 @@ exp.nogci.2i.state <- accesslog("2i", "nogci_T60_M262144_W500", REP, WARMUP_SECS
 exp.nogci.4i.nostate <- accesslog("4i", "nogci_T120_M262144_W0", REP, WARMUP_SECS, DURATION_SECS)
 exp.nogci.4i.state <- accesslog("4i", "nogci_T120_M262144_W500", REP, WARMUP_SECS, DURATION_SECS)
 exp.nogci.cmp <- rbind(
-  data.frame("latency"=exp.nogci.1i.nostate$succ$request_time, type="OFF", state="Stateless", n="1 Instance"),
-  data.frame("latency"=exp.nogci.1i.state$succ$request_time, type="OFF", state="Stateful", n="1 Instance"),
-  data.frame("latency"=exp.nogci.2i.state$succ$request_time, type="OFF", state="Stateful", n="2 Instances"),
-  data.frame("latency"=exp.nogci.2i.state$succ$request_time, type="OFF", state="Stateful", n="2 Instances"),
-  data.frame("latency"=exp.nogci.4i.state$succ$request_time, type="OFF", state="Stateful", n="4 Instances"),
-  data.frame("latency"=exp.nogci.4i.state$succ$request_time, type="OFF", state="Stateful", n="4 Instances")
+  data.frame("latency"=exp.nogci.1i.nostate$succ$request_time, type="GCI OFF", state="Stateless", n="1 Replica", origin="System Experiment"),
+  data.frame("latency"=exp.nogci.1i.state$succ$request_time, type="GCI OFF", state="Stateful", n="1 Replica", origin="System Experiment"),
+  data.frame("latency"=exp.nogci.2i.state$succ$request_time, type="GCI OFF", state="Stateful", n="2 Replicas", origin="System Experiment"),
+  data.frame("latency"=exp.nogci.2i.state$succ$request_time, type="GCI OFF", state="Stateful", n="2 Replicas", origin="System Experiment"),
+  data.frame("latency"=exp.nogci.4i.state$succ$request_time, type="GCI OFF", state="Stateful", n="4 Replicas", origin="System Experiment"),
+  data.frame("latency"=exp.nogci.4i.state$succ$request_time, type="GCI OFF", state="Stateful", n="4 Replicas", origin="System Experiment")
 )
 
 exp.cmp <- rbind(exp.gci.cmp, exp.nogci.cmp)
 sim.cmp <- rbind(sim.gci.cmp, sim.nogci.cmp)
+cmp <- rbind(exp.cmp, sim.cmp)
 ```
 
 It is ideal to have an statistical test to check how close the simulator latency is to the experiment latency. This "closeness" can be measured by a Goodness-of-Fit (GoF) test. We used the two-sample Kolmogorov-Smirnov (KS) test, which checks the null hypothesis: the two samples are drawn from the same distribution. 
@@ -138,6 +141,7 @@ ks.1i.table <- as.table(matrix(
   ),
   ncol=2, byrow=T)
 )
+ks.1i.table <- signif(ks.1i.table, 3)
 colnames(ks.1i.table) <- c("GCI Off", "GCI On")
 rownames(ks.1i.table) <- c("Stateless", "Statefull")
 knitr::kable(ks.1i.table)
@@ -153,6 +157,7 @@ ks.2i.table <- as.table(matrix(
   ),
   ncol=2, byrow=T)
 )
+ks.2i.table <- signif(ks.2i.table, 3)
 colnames(ks.2i.table) <- c("GCI Off", "GCI On")
 rownames(ks.2i.table) <- c("Stateless", "Statefull")
 knitr::kable(ks.2i.table)
@@ -168,9 +173,25 @@ ks.4i.table <- as.table(matrix(
   ),
   ncol=2, byrow=T)
 )
+ks.4i.table <- signif(ks.4i.table, 3)
 colnames(ks.4i.table) <- c("GCI Off", "GCI On")
 rownames(ks.4i.table) <- c("Stateless", "Statefull")
 knitr::kable(ks.4i.table)
+```
+
+## ECDFs
+
+```{r}
+ggplot(cmp, aes(latency, linetype=origin)) +
+  stat_ecdf() +
+  facet_grid(type ~ n + state) +
+  xlab("Latency(ms)") +
+  ylab("ECDF") +
+  theme_bw() +
+  theme(legend.title=element_blank()) +
+  scale_x_continuous(breaks=seq(0,max(cmp$latency), 30)) +
+  theme(legend.position="top")
+ggsave("validation.pdf")
 ```
 
 **Conclusion**

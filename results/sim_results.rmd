@@ -17,7 +17,7 @@ require(ggplot2)
 
 source("functions.R")
 
-REP <- 2
+REP <- 1
 WARMUP_SECS <- 240
 DURATION_SECS <- 0
 
@@ -56,22 +56,30 @@ sim.nogci.1i.nostate <- simresult("sim/sim_output_nogci_sl_300_30_1", REP)
 sim.nogci.1i.state <- simresult("sim/sim_output_nogci_sf_300_30_1", REP)
 sim.nogci.2i.nostate <- simresult("sim/sim_output_nogci_sl_300_60_2", REP)
 sim.nogci.2i.state <- simresult("sim/sim_output_nogci_sf_300_60_2", REP)
+sim.nogci.4i.nostate <- simresult("sim/sim_output_nogci_sl_300_120_4", REP)
+sim.nogci.4i.state <- simresult("sim/sim_output_nogci_sf_300_120_4", REP)
 sim.nogci.cmp <- rbind(
   data.frame("latency"=sim.nogci.1i.nostate$succ$latency, type="OFF", state="Stateless", n="1 Instance"),
   data.frame("latency"=sim.nogci.1i.state$succ$latency, type="OFF", state="Stateful", n="1 Instance"),
   data.frame("latency"=sim.nogci.2i.nostate$succ$latency, type="OFF", state="Stateless", n="2 Instances"),
-  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="OFF", state="Stateful", n="2 Instances")
+  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="OFF", state="Stateful", n="2 Instances"),
+  data.frame("latency"=sim.nogci.4i.nostate$succ$latency, type="OFF", state="Stateless", n="4 Instances"),
+  data.frame("latency"=sim.nogci.4i.state$succ$latency, type="OFF", state="Stateful", n="4 Instances")
 )
 
 sim.gci.1i.nostate <- simresult("sim/sim_output_gci_sl_300_30_1", REP)
 sim.gci.1i.state <- simresult("sim/sim_output_gci_sf_300_30_1", REP)
 sim.gci.2i.nostate <- simresult("sim/sim_output_gci_sl_300_60_2", REP)
 sim.gci.2i.state <- simresult("sim/sim_output_gci_sf_300_60_2", REP)
+sim.gci.4i.nostate <- simresult("sim/sim_output_gci_sl_300_120_4", REP)
+sim.gci.4i.state <- simresult("sim/sim_output_gci_sf_300_120_4", REP)
 sim.gci.cmp <- rbind(
   data.frame("latency"=sim.gci.1i.nostate$succ$latency, type="ON", state="Stateless", n="1 Instance"),
   data.frame("latency"=sim.gci.1i.state$succ$latency, type="ON", state="Stateful", n="1 Instance"),
   data.frame("latency"=sim.gci.2i.nostate$succ$latency, type="ON", state="Stateless", n="2 Instances"),
-  data.frame("latency"=sim.gci.2i.state$succ$latency, type="ON", state="Stateful", n="2 Instances")
+  data.frame("latency"=sim.gci.2i.state$succ$latency, type="ON", state="Stateful", n="2 Instances"),
+  data.frame("latency"=sim.gci.4i.nostate$succ$latency, type="ON", state="Stateless", n="4 Instances"),
+  data.frame("latency"=sim.gci.4i.state$succ$latency, type="ON", state="Stateful", n="4 Instances")
 )
 
 cmp <- rbind(sim.gci.cmp, sim.nogci.cmp)
