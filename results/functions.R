@@ -1,4 +1,5 @@
 require(stringr)
+require(boot)
 
 # Parses the experiment's NGINX log file.
 read.accesslog <- function(f, warmup, duration) {
@@ -75,11 +76,31 @@ p99999 <- function(x) {
   return(quantile(x, 0.99999))
 }
 
+ci.fun <- function(data, f) {
+  ci.fun <- function(data, indices) {
+    return(f(data[indices]))
+  }
+  b <- boot(data, ci.fun, R=5000)
+  return(boot.ci(b, conf=0.95, type="perc"))
+}
+
+ci.diff.fun <- function(x, y, f) {
+  # Idea from: https://www.zoology.ubc.ca/~schluter/R/resample/
+  mydata <- cbind.data.frame(x, y)
+  ci.fun <- function(mydata, indices) {
+    xq <- f(mydata$x[indices])
+    yq <- f(mydata$y[indices])
+    return(xq-yq)
+  }
+  b <- boot(mydata, ci.fun, R=5000)
+  return(boot.ci(b, conf=0.95, type="perc"))
+}
+
 ci.p <- function(x, p) {
   ci.fun <- function(data, indices) {
     return(c(quantile(data[indices], c(p)), var(data)))
   }
-  b <- boot(x, ci.fun, R=1500)
+  b <- boot(x, ci.fun, R=5000)
   bci <- boot.ci(b)
   return(data.frame("ymin"=c(bci$basic[4]), "ymax"=c(bci$basic[5])))
 }

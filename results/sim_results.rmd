@@ -14,12 +14,11 @@ require(dplyr)
 require(stringr)
 require(cowplot)
 require(ggplot2)
+require(gridExtra)
 
 source("functions.R")
 
-REP <- 1
-WARMUP_SECS <- 240
-DURATION_SECS <- 0
+REP <- 2
 
 read.simresult <- function(f) {
   df <- read.csv(f)
@@ -58,14 +57,23 @@ sim.nogci.2i.nostate <- simresult("sim/sim_output_nogci_sl_300_60_2", REP)
 sim.nogci.2i.state <- simresult("sim/sim_output_nogci_sf_300_60_2", REP)
 sim.nogci.4i.nostate <- simresult("sim/sim_output_nogci_sl_300_120_4", REP)
 sim.nogci.4i.state <- simresult("sim/sim_output_nogci_sf_300_120_4", REP)
+sim.nogci.8i.nostate <- simresult("sim/sim_output_nogci_sl_300_240_8", REP)
+sim.nogci.8i.state <- simresult("sim/sim_output_nogci_sf_300_240_8", REP)
+sim.nogci.16i.nostate <- simresult("sim/sim_output_nogci_sl_300_480_16", REP)
+sim.nogci.16i.state <- simresult("sim/sim_output_nogci_sf_300_480_16", REP)
 sim.nogci.cmp <- rbind(
-  data.frame("latency"=sim.nogci.1i.nostate$succ$latency, type="OFF", state="Stateless", n="1 Instance"),
-  data.frame("latency"=sim.nogci.1i.state$succ$latency, type="OFF", state="Stateful", n="1 Instance"),
-  data.frame("latency"=sim.nogci.2i.nostate$succ$latency, type="OFF", state="Stateless", n="2 Instances"),
-  data.frame("latency"=sim.nogci.2i.state$succ$latency, type="OFF", state="Stateful", n="2 Instances"),
-  data.frame("latency"=sim.nogci.4i.nostate$succ$latency, type="OFF", state="Stateless", n="4 Instances"),
-  data.frame("latency"=sim.nogci.4i.state$succ$latency, type="OFF", state="Stateful", n="4 Instances")
+  data.frame("latency"=sim.nogci.1i.nostate$succ$latency, GCI="OFF", state="Stateless", n="1 Instance"),
+  data.frame("latency"=sim.nogci.1i.state$succ$latency, GCI="OFF", state="Stateful", n="1 Instance"),
+  data.frame("latency"=sim.nogci.2i.nostate$succ$latency, GCI="OFF", state="Stateless", n="2 Instances"),
+  data.frame("latency"=sim.nogci.2i.state$succ$latency, GCI="OFF", state="Stateful", n="2 Instances"),
+  data.frame("latency"=sim.nogci.4i.nostate$succ$latency, GCI="OFF", state="Stateless", n="Small (4 Replicas)"),
+  data.frame("latency"=sim.nogci.4i.state$succ$latency, GCI="OFF", state="Stateful", n="Small (4 Replicas)"),
+  data.frame("latency"=sim.nogci.8i.nostate$succ$latency, GCI="OFF", state="Stateless", n="8 Instances"),
+  data.frame("latency"=sim.nogci.8i.state$succ$latency, GCI="OFF", state="Stateful", n="8 Instances"),
+  data.frame("latency"=sim.nogci.16i.nostate$succ$latency, GCI="OFF", state="Stateless", n="Large (128 Replicas)"),
+  data.frame("latency"=sim.nogci.16i.state$succ$latency, GCI="OFF", state="Stateful", n="Large (128 Replicas)")
 )
+
 
 sim.gci.1i.nostate <- simresult("sim/sim_output_gci_sl_300_30_1", REP)
 sim.gci.1i.state <- simresult("sim/sim_output_gci_sf_300_30_1", REP)
@@ -73,17 +81,106 @@ sim.gci.2i.nostate <- simresult("sim/sim_output_gci_sl_300_60_2", REP)
 sim.gci.2i.state <- simresult("sim/sim_output_gci_sf_300_60_2", REP)
 sim.gci.4i.nostate <- simresult("sim/sim_output_gci_sl_300_120_4", REP)
 sim.gci.4i.state <- simresult("sim/sim_output_gci_sf_300_120_4", REP)
+sim.gci.8i.nostate <- simresult("sim/sim_output_gci_sl_300_240_8", REP)
+sim.gci.8i.state <- simresult("sim/sim_output_gci_sf_300_240_8", REP)
+sim.gci.16i.nostate <- simresult("sim/sim_output_gci_sl_300_480_16", REP)
+sim.gci.16i.state <- simresult("sim/sim_output_gci_sf_300_480_16", REP)
 sim.gci.cmp <- rbind(
-  data.frame("latency"=sim.gci.1i.nostate$succ$latency, type="ON", state="Stateless", n="1 Instance"),
-  data.frame("latency"=sim.gci.1i.state$succ$latency, type="ON", state="Stateful", n="1 Instance"),
-  data.frame("latency"=sim.gci.2i.nostate$succ$latency, type="ON", state="Stateless", n="2 Instances"),
-  data.frame("latency"=sim.gci.2i.state$succ$latency, type="ON", state="Stateful", n="2 Instances"),
-  data.frame("latency"=sim.gci.4i.nostate$succ$latency, type="ON", state="Stateless", n="4 Instances"),
-  data.frame("latency"=sim.gci.4i.state$succ$latency, type="ON", state="Stateful", n="4 Instances")
+  data.frame("latency"=sim.gci.1i.nostate$succ$latency, GCI="ON", state="Stateless", n="1 Instance"),
+  data.frame("latency"=sim.gci.1i.state$succ$latency, GCI="ON", state="Stateful", n="1 Instance"),
+  data.frame("latency"=sim.gci.2i.nostate$succ$latency, GCI="ON", state="Stateless", n="2 Instances"),
+  data.frame("latency"=sim.gci.2i.state$succ$latency, GCI="ON", state="Stateful", n="2 Instances"),
+  data.frame("latency"=sim.gci.4i.nostate$succ$latency, GCI="ON", state="Stateless", n="Small (4 Replicas)"),
+  data.frame("latency"=sim.gci.4i.state$succ$latency, GCI="ON", state="Stateful", n="Small (4 Replicas)"),
+  data.frame("latency"=sim.gci.8i.nostate$succ$latency, GCI="ON", state="Stateless", n="8 Instances"),
+  data.frame("latency"=sim.gci.8i.state$succ$latency, GCI="ON", state="Stateful", n="8 Instances"),
+  data.frame("latency"=sim.gci.16i.nostate$succ$latency, GCI="ON", state="Stateless", n="Large (128 Replicas)"),
+  data.frame("latency"=sim.gci.16i.state$succ$latency, GCI="ON", state="Stateful", n="Large (128 Replicas)")
 )
 
 cmp <- rbind(sim.gci.cmp, sim.nogci.cmp)
 ```
+
+```{r}
+calc.tp <- function(df) {
+  return(NROW(df)/((df[NROW(df),1]-df[1,1])/1000))  
+}
+
+calc.tp(sim.nogci.4i.nostate$succ)
+calc.tp(sim.gci.4i.nostate$succ)
+calc.tp(sim.nogci.4i.state$succ)
+calc.tp(sim.gci.4i.state$succ)
+
+calc.tp(sim.nogci.16i.nostate$succ)
+calc.tp(sim.gci.16i.nostate$succ)
+calc.tp(sim.nogci.16i.state$succ)
+calc.tp(sim.gci.16i.state$succ)
+```
+
+```{r, cache=T}
+rt <- sim.gci.4i.state$succ$latency
+m <- median(rt)
+p999 <- quantile(rt, c(0.999))
+
+rt.nogci <- sim.nogci.4i.state$succ$latency
+m.nogci <- median(rt.nogci)
+p999.nogci <- quantile(rt.nogci, c(0.999))
+
+p1 <- ggplot() +
+  stat_ecdf(data=sim.gci.4i.state$succ, aes(latency)) +
+  ylab("Frequency") +
+  xlab("Latency (ms)") +
+  theme_bw() +
+  geom_vline(xintercept=m, size=0.8, linetype="dotted") +
+  geom_text(aes(x=m, label="Median", y=0.4), vjust = 2, angle=90) +
+  geom_vline(xintercept=p999, size=0.8, linetype="dotted") +
+  geom_text(aes(x=p999, label="99.9th perc.", y=0.4), vjust = 2, angle=90) + 
+  geom_segment(data=sim.gci.4i.state$succ, aes(x=m, y=0.1, xend=p999, yend=0.1), arrow = arrow(), size=0.1, colour="darkgray") +
+  geom_segment(data=sim.gci.4i.state$succ, aes(x=p999, y=0.1, xend=m, yend=0.1), arrow = arrow(), size=0.1, colour="darkgray") +
+  scale_x_continuous(breaks = seq(0, max(rt.nogci), by = 10)) +
+  geom_label(aes(x=115, label="GCI On", y=0.5), vjust = 2, angle=0) +
+  coord_cartesian(xlim = c(0, max(rt.nogci)))
+
+
+p2 <- ggplot() +
+  stat_ecdf(data=sim.nogci.4i.state$succ, aes(latency)) +
+  ylab("Frequency") +
+  theme_bw() +
+  theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+  geom_vline(xintercept=m.nogci, size=0.8, linetype="dotted") +
+  geom_text(aes(x=m.nogci, label="Median", y=0.4), vjust = 2, angle=90) +
+  geom_vline(xintercept=p999.nogci, size=0.8, linetype="dotted") +
+  geom_text(aes(x=p999.nogci, label="99.9th perc.", y=0.4), vjust = 2, angle=90) + 
+  geom_segment(data=sim.nogci.4i.state$succ, aes(x=m.nogci, y=0.1, xend=p999.nogci, yend=0.1), arrow = arrow(), size=0.1, colour="darkgray") +
+  geom_segment(data=sim.nogci.4i.state$succ, aes(x=p999.nogci, y=0.1, xend=m.nogci, yend=0.1), arrow = arrow(), size=0.1, colour="darkgray") +
+  scale_x_continuous(breaks = seq(0, max(rt.nogci), by = 10)) +
+  geom_label(aes(x=115, label="GCI Off", y=0.5), vjust = 2, angle=0) +
+  coord_cartesian(xlim = c(0, max(rt.nogci)))
+
+ga <- grid.arrange(p2, p1, ncol=1, nrow=2)
+ggsave(file="cmp_exp.pdf", ga)
+```
+
+```{r}
+rt.nogci <- sim.nogci.4i.state$succ$latency
+m.nogci <- median(rt.nogci)
+p999.nogci <- quantile(rt.nogci, c(0.999))
+ggplot() +
+  stat_ecdf(data=sim.nogci.4i.state$succ, aes(latency)) +
+  xlab("Latency (ms)") +
+  ylab("Frequency") +
+  theme_bw() +
+  geom_vline(xintercept=m.nogci, size=0.8, linetype="dotted") +
+  geom_text(aes(x=m.nogci, label="Median", y=0.4), vjust = 2, angle=90) +
+  geom_vline(xintercept=p999.nogci, size=0.8, linetype="dotted") +
+  geom_text(aes(x=p999.nogci, label="99.9th perc.", y=0.4), vjust = 2, angle=90) + 
+  geom_segment(data=sim.nogci.4i.state$succ, aes(x=m.nogci, y=0.1, xend=p999.nogci, yend=0.1), arrow = arrow(), size=0.1, colour="darkgray") +
+  geom_segment(data=sim.nogci.4i.state$succ, aes(x=p999.nogci, y=0.1, xend=m.nogci, yend=0.1), arrow = arrow(), size=0.1, colour="darkgray") +
+  scale_x_continuous(breaks = seq(0, max(rt.nogci), by = 10)) +
+  coord_cartesian(xlim = c(0, max(rt.nogci)))
+ggsave("intro.pdf")
+```
+
 
 # Simulation results
 
@@ -101,14 +198,141 @@ ggplot(cmp, aes(type, latency)) +
   theme(axis.title.x=element_blank())
 ```
 ```{r}
-ggplot(cmp, aes(latency, linetype=type)) +
+ggplot(cmp%>%filter(n == "Small (4 Replicas)" | n == "Large (128 Replicas)"), aes(latency, linetype=GCI)) +
   stat_ecdf() +
   facet_grid(state ~ n) +
   xlab("Latency(ms)") +
   ylab("ECDF at Tail") +
-  scale_x_continuous(breaks=seq(0,max(cmp$latency), 20)) +
+  scale_x_continuous(breaks=seq(0,max(cmp$latency), 30)) +
   coord_cartesian(ylim = c(0.99, 1)) +
-  theme(legend.position="top")
+  theme_bw() +
+  theme(legend.position="top") 
+  
+ggsave("res_cmp.pdf")
+```
+
+```{r}
+
+print.stats.table <- function(df1, df2) {
+  ci999.df1 <- ci.fun(df1, p999)
+  ci999.diff <- ci.diff.fun(df1, df2, p999)
+  ci9999.df1 <- ci.fun(df1, p9999)
+  ci9999.diff <- ci.diff.fun(df1, df2, p9999)
+  ci99999.df1 <- ci.fun(df1, p99999)
+  ci99999.diff <- ci.diff.fun(df1, df2, p99999)
+  median.df1 <- ci.fun(df1, median)
+  median.diff <- ci.diff.fun(df1, df2, median)
+  sd.df1 <- ci.fun(df1, sd)
+  sd.diff <- ci.diff.fun(df1, df2, sd)
+  print(paste("Median", signif(median.diff$perc[,4:5]/median.df1$perc[,5], digits=4)*100))
+  print(paste("SD", signif(sd.diff$perc[,4:5]/sd.df1$perc[,5], digits=4)*100))
+  print(paste("99.9", signif(ci999.diff$perc[,4:5]/ci999.df1$perc[,5], digits=4)*100))
+  print(paste("99.99", signif(ci9999.diff$perc[,4:5]/ci9999.df1$perc[,5], digits=4)*100))
+  print(paste("99.999", signif(ci99999.diff$perc[,4:5]/ci99999.df1$perc[,5], digits=4)*100))
+}
+
+SAMPLESIZE <- 1000
+
+print("Small")
+print("")
+print("Stateless")
+print("")
+print.stats.table(
+  sample(sim.nogci.4i.nostate$succ$latency, SAMPLESIZE),
+  sample(sim.gci.4i.nostate$succ$latency, SAMPLESIZE)
+)
+print("")
+print("Stateful")
+print("")
+print.stats.table(
+  sample(sim.nogci.4i.state$succ$latency, SAMPLESIZE),
+  sample(sim.gci.4i.state$succ$latency, SAMPLESIZE)
+)
+
+print("")
+print("Large")
+print("")
+print("Stateless")
+print("")
+print.stats.table(
+  sample(sim.nogci.16i.nostate$succ$latency, SAMPLESIZE),
+  sample(sim.gci.16i.nostate$succ$latency, SAMPLESIZE)
+)
+print("")
+print("Stateful")
+print("")
+print.stats.table(
+  sample(sim.nogci.16i.state$succ$latency, SAMPLESIZE),
+  sample(sim.gci.16i.state$succ$latency, SAMPLESIZE)
+)
+```
+
+```{r}
+mean(bind_rows(
+      replicate(
+          10000,
+          ks.test((sim.nogci.4i.nostate$succ %>% sample_n(30))$latency, 
+                  (sim.gci.4i.nostate$succ %>% sample_n(30))$latency),
+          simplify = F),
+      .id="Obs")$p.value)
+
+mean(bind_rows(
+      replicate(
+          10000,
+          ks.test((sim.nogci.16i.nostate$succ %>% sample_n(30))$latency, 
+                  (sim.gci.16i.nostate$succ %>% sample_n(30))$latency),
+          simplify = F),
+      .id="Obs")$p.value)
+mean(bind_rows(
+      replicate(
+          1000,
+          ks.test((sim.nogci.4i.state$succ %>% sample_n(30))$latency, 
+                  (sim.gci.4i.state$succ %>% sample_n(30))$latency),
+          simplify = F))$p.value)
+
+mean(bind_rows(
+      replicate(
+          10000,
+          ks.test((sim.nogci.16i.state$succ %>% sample_n(30))$latency, 
+                  (sim.gci.16i.state$succ %>% sample_n(30))$latency),
+          simplify = F),
+      .id="Obs")$p.value)
+```
+  
+}
+```{r}
+print("Stateless")
+print("")
+lat.nogci.16i.nostate <- sample(sim.nogci.16i.nostate$succ$latency, 4000)
+lat.gci.16i.nostate <- sample(sim.gci.16i.nostate$succ$latency, 4000)
+ci999.nogci.nostate <- ci.quantile(lat.nogci.16i.nostate, 0.999)
+ci999.diff.nostate <- ci.diff.quantile(lat.nogci.16i.nostate, lat.gci.16i.nostate, 0.999)
+signif(ci999.diff.nostate$basic[,4:5]/ci999.nogci.nostate$basic[,5], digits=4)*100
+
+ci9999.nogci.nostate <- ci.quantile(lat.nogci.16i.nostate, 0.9999)
+ci9999.diff.nostate <- ci.diff.quantile(lat.nogci.16i.nostate, lat.gci.16i.nostate, 0.9999)
+signif(ci9999.diff.nostate$basic[,4:5]/ci9999.nogci.nostate$basic[,5], digits=4)*100
+
+ci99999.nogci.nostate <- ci.quantile(lat.nogci.16i.nostate, 0.99999)
+ci99999.diff.nostate <- ci.diff.quantile(lat.nogci.16i.nostate, lat.gci.16i.nostate, 0.99999)
+signif(ci99999.diff.nostate$basic[,4:5]/ci99999.nogci.nostate$basic[,5], digits=4)*100
+
+print("")
+print("Stateful")
+print("")
+lat.nogci.16i.state <- sample(sim.nogci.4i.state$succ$latency, 4000)
+lat.gci.16i.state <- sample(sim.gci.4i.state$succ$latency, 4000)
+ci999.nogci.state <- ci.quantile(lat.nogci.16i.state, 0.999)
+ci999.diff.state <- ci.diff.quantile(lat.nogci.16i.state, lat.gci.16i.state, 0.999)
+signif(ci999.diff.state$basic[,4:5]/ci999.nogci.state$basic[,5], digits=4)*100
+
+ci9999.nogci.state <- ci.quantile(lat.nogci.16i.state, 0.9999)
+ci9999.diff.state <- ci.diff.quantile(lat.nogci.16i.state, lat.gci.16i.state, 0.9999)
+signif(ci9999.diff.state$basic[,4:5]/ci9999.nogci.state$basic[,5], digits=4)*100
+
+ci99999.nogci.state <- ci.quantile(lat.nogci.16i.state, 0.99999)
+ci99999.diff.state <- ci.diff.quantile(lat.nogci.16i.state, lat.gci.16i.state, 0.99999)
+signif(ci99999.diff.state$basic[,4:5]/ci99999.nogci.state$basic[,5], digits=4)*100
 ```
 
 #### Latency improvement
